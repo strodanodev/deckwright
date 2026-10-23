@@ -36,6 +36,7 @@ const NODE_URL = env.GAUNTLET_NODE_URL ?? '';
 const BUILD = env.GAUNTLET_BUILD || null;
 const MODE = env.GAUNTLET_PLACED_MODE ?? 'casual';
 const TURN_MS = Number(env.TCG_TURN_MS ?? 60_000);
+const DECK_MS = Number(env.TCG_DECK_MS ?? 90_000);
 const DISCONNECT_MS = Number(env.TCG_DISCONNECT_MS ?? 30_000);
 const SIGN_MS = Number(env.TCG_SIGN_MS ?? 60_000);
 const seats: Array<{ sub: string }> = env.GAUNTLET_SEATS ? JSON.parse(env.GAUNTLET_SEATS) : [];
@@ -136,10 +137,19 @@ function record(side: 0 | 1, x: number): void {
 }
 
 function armTurnClock(): void {
+  if (state?.phase === 'decks' && turnTimer) return; // one deadline for the whole deck phase
   if (turnTimer) clearTimeout(turnTimer);
+  turnTimer = null;
   if (!state || state.over) return;
   const side = state.turn;
   // An idle player's turn ends for them; the entry carries their END, and both players sign the log.
+  if (state.phase === 'decks') {
+    // A player who has not finished declaring by the deadline plays the rest of the suggested deck.
+    turnTimer = setTimeout(() => {
+      for (const s of [0, 1] as const) for (let x = rules.suggestedDeclaration(state!, s); x && state?.phase === 'decks'; x = rules.suggestedDeclaration(state!, s)) record(s, x);
+    }, DECK_MS);
+    return;
+  }
   turnTimer = setTimeout(() => record(side, endTurn()), TURN_MS);
 }
 
@@ -195,7 +205,8 @@ function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) =
   if (m.t === 'act' && Number.isInteger(m.x)) {
     const x = (m.x as number) | 0;
     const op = decode(x).op;
-    if (op === Op.Concede || (state.turn === side && rules.isLegal(state, x))) record(side, op === Op.Concede ? concede() : x);
+    // isLegal with a side: declarations from either side in the deck phase, the side to act afterwards.
+    if (op === Op.Concede || rules.isLegal(state, x, side)) record(side, op === Op.Concede ? concede() : x);
     else peer.send({ t: 'reject', x, reason: state.turn === side ? 'illegal' : 'not your turn' });
   } else if (m.t === 'sig' && typeof m.sig === 'string' && /^[0-9a-f]{128}$/.test(m.sig)) {
     seat.sig = m.sig;

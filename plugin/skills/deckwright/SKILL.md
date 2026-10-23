@@ -1,0 +1,168 @@
+---
+name: deckwright
+description: Build a complete Web3 trading card game with Deckwright — from scratch (a themed card set) or from any NFT collection on chain — and ship it as a playable, deployable web game. One JSON file is the game; ERC-6699 token stats become champions; players can bring wallet decks; bots balance it; the same deterministic rules run in the browser, a two-player relay and LitNode. Use when the user asks to make, design, rebalance, theme, test or deploy a card game / TCG / CCG, turn NFTs into playable cards, or work in a Deckwright project.
+---
+
+# Deckwright: build a card game
+
+Work through this in order and don't stop at a plan: the deliverable is a game that runs. A fresh request ("make me a pirate TCG") should end with a project that has:
+- a themed, balanced card set;
+- passing checks;
+- a site that plays in the browser.
+
+Ask the user only if something is genuinely blocking. Otherwise choose sensible defaults, say what you assumed, and keep going.
+
+## 0. Before you start
+
+- **Tools:** you need Node 22+, plus git (npx installs Deckwright from GitHub). Check with `node --version`.
+- **Inputs to settle**, from the request or by default:
+
+| Input | Default |
+|---|---|
+| Game title and id (kebab-case) | from the theme, for example `pirate-duel` |
+| Theme: 3–5 elements and a flavour for names | from the request |
+| Cards | 18–24 distinct cards |
+| NFT collection (an address and chain)? | none: build from scratch |
+| Wallet decks (players bring their own decks)? | only with a collection |
+
+## 1. Create the project
+
+```bash
+npx github:strodanodev/deckwright create <game-id> --title "<Game Title>"
+cd <game-id>
+npm install
+```
+
+- Once Deckwright is on npm, `npx deckwright create …` does the same.
+- `create` writes these files:
+  - `games/<id>.game.json`: the game; you'll rewrite it.
+  - `web/`: the site, with a built engine.
+  - `vercel.json` and `gauntlet.json`.
+  - this skill, in `.claude/skills/`.
+- Inside the project, run every command as `npx deckwright <cmd>`. It's a local dependency.
+
+## 2. Design the game (`games/<id>.game.json`)
+
+Rewrite the starter's `title`, `description`, `elements`, `cards` and `deck` to fit the theme. Keep the `litnode`, `champion` and `rules` blocks unless you have a reason to change them.
+
+Design by the numbers in **[references/design-guide.md](references/design-guide.md)**: the cost curve, the stat budget per cost, keyword prices, the deck mix, and element cycles. Every field and limit is in **[references/game-config.md](references/game-config.md)**.
+
+Hard rules: the validator rejects anything else, with a clear message.
+- **Ids:** card and element ids are kebab-case and unique; `element` must be one of `elements[].id`.
+- **Units:** `attack` 0–99 and `health` 1–99. `keywords` may only be `guard` or `haste`.
+- **Spells and relics:** each has one `effect`, which is one of:
+  - `{ "op": "damage" | "heal" | "draw" | "energy", "amount": n }`
+  - `{ "op": "buff", "attack": a, "health": h }`
+- **Deck:** `deck` is `{ cardId: copies }` with 5–120 cards in total.
+- **Version:** `litnode.rulesetId` is `<id>.v1`. Bump it to `.v2` and up on any rules or card change after a release.
+- **Art (optional):** a card's `art` can point to a local image, for example `"./assets/cards/kraken.webp"` under `web/`. The site's CSP serves same-origin images only. With no art, cards show an element glyph, and that's fine.
+
+## 3. Balance it
+
+```bash
+npx deckwright sim games/<id>.game.json --matches 300
+```
+
+Iterate until the sim meets these targets. Each pass is a JSON edit plus a re-run.
+
+| Output | Target | If not |
+|---|---|---|
+| `replay mismatches` | **0** (required) | Something non-deterministic was added: undo it |
+| `first player wins` | 45–55% | Above 55%: raise `rules.secondPlayerEnergy` by 1, or make the deck larger. Below 45%: lower it |
+| `hit maxTicks` | about 0% | Add damage at higher costs, or raise `litnode.maxTicks` |
+| `avg turns` | 8–16 | Too short: more health and cheaper healing. Too long: more attack and fewer `guard` |
+| `never played` | few cards | Cheapen or strengthen them, or cut them |
+
+## 4. Optional: build it from an NFT collection
+
+Any ERC-721 works. ERC-6699 `coreStats` make champions; without them, champions are neutral.
+
+```bash
+npx deckwright snapshot <address> --chain liteforge --out collection
+npx deckwright import collection/cards.json --id <game-id> --out games
+```
+
+- **`snapshot`:** for chains other than Liteforge, use `--rpc <url>` and, if the chain has a Blockscout explorer, `--explorer <url>`. It downloads the art.
+- **`import`:** rewrites `games/<id>.game.json` from the collection. Then apply step 2's theming to the support cards and step 3's balancing.
+- **Wallet decks** (players bring the cards they own): add `"deckRules": { "mode": "declared", "size": 30, "maxCopies": 2 }`. The default `deck` must hold at least `size` cards. Re-run sim; smaller decks favour the first player.
+- **Rights:** the Rapture characters (`0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721`) are © LitVM Games. A game meant for release needs permission (see [references/pipeline.md](references/pipeline.md)). Prototypes are fine.
+
+## 5. Check LitNode compatibility
+
+```bash
+npx deckwright title games/<id>.game.json
+```
+
+It must end `ok`. That means the game can later be hosted and settled on LitNode unchanged.
+
+## 6. Build and play the site
+
+```bash
+npx deckwright web games/<id>.game.json            # add --collection collection/cards.json if you did step 4
+npx deckwright dev                                 # serves http://127.0.0.1:4173 (use 127.0.0.1, not localhost)
+```
+
+- Run `dev` in the background.
+- Open the site, pick a champion, and play at least one full turn against the bot:
+  - play a card;
+  - attack;
+  - end the turn;
+  - check the browser console has no errors.
+- To restyle it to the theme:
+  - `web/app.css`: the `:root` colour tokens and fonts (element colours come from `elements[].color` in the game file);
+  - `web/index.html`: text, title, description.
+- Keep the page's safety rules:
+  - no inline `<script>` (the CSP blocks it), so logic stays in `web/app.js`;
+  - card and collection names go in through `textContent` only, never `innerHTML`.
+- Re-run `deckwright web` after every game JSON change; it regenerates `web/engine`, `web/data` and the art.
+
+## 7. Two players (optional check)
+
+```bash
+TCG_DEV=1 TCG_GAME=games/<id>.game.json npx deckwright relay     # ws://127.0.0.1:7830, one match per process
+```
+
+Open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&name=alice` and `…&name=bob` in two tabs. Pick champions; with wallet decks, build or suggest a deck. Play a turn in each tab.
+
+## 8. Deliver
+
+Report back to the user with:
+- what you built: theme, card count, mechanics, deck rules;
+- the final sim numbers;
+- the exact commands to play locally;
+- how to deploy: `vercel deploy --prod` from the project root, or any static host serving `web/` with the headers in `vercel.json`.
+
+List what you assumed, and anything left undone.
+
+## Rules that keep matches replayable
+
+Don't break these when extending Deckwright itself.
+- **The rules core is pure and integer-only.**
+  - No `Math.random`, `Date`, timers, `fetch`, `WebSocket`, storage, `crypto.`, `process.env` or `import()`, not even as words in strings.
+  - Randomness comes only from `seededRandom(seed)`.
+- **Log shape:** two players, one integer action per log entry. Illegal actions are no-ops, never throws, and `maxTicks` bounds a match.
+- **Champions:** stats arrive as `ctx.agents[player].stats`; with no champion, every stat is 0. Client, relay and ruleset must all hydrate the same way.
+- **Open information:** v1 has no hidden hands. Commit-reveal or ZK would be a new ruleset version.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `invalid game config: …` | Read the listed problems; each names the field. Limits are in game-config.md |
+| `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/deckwright` and then `npx deckwright` |
+| Site blank, console CSP error | Something was inlined or loaded from another origin. Move it into `web/` or `app.js` |
+| `snapshot` slow or `429` | The public RPC throttles; the tool waits and retries. Explorer-backed chains are faster |
+| Art missing after `web` | Remote art is dropped by design: re-run `snapshot` (it downloads), or use local `art` paths |
+
+## Extending Deckwright (in its own repo)
+
+The source is at https://github.com/strodanodev/deckwright: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
+1. Add it to the `Effect` union in `src/core/types.ts`.
+2. Handle it in `resolve()` in `src/core/rules.ts`.
+3. Accept it in `validateGame()`.
+4. List its targets in `legalActions()`.
+5. Teach the bot's score in `src/core/bot.ts`.
+6. Describe it in `describe()` in `web/app.js`.
+7. Re-run `pnpm test`, `pnpm sim`, `pnpm title` and `pnpm web`.
+
+LitNode hosting (deferred) is in [references/litnode.md](references/litnode.md).

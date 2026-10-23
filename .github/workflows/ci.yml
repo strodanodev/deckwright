@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: typecheck, test, builder smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4   # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (also builds dist/, the CLI)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Committed site engine matches the source
+        # web/engine is generated; a rules change without `pnpm web` would ship stale rules to the demo.
+        run: |
+          node dist/cli.js web games/rapture-duel.game.json --out "$RUNNER_TEMP/web" > /dev/null
+          diff -q <(tail -n +3 "$RUNNER_TEMP/web/engine/deckwright.js") <(tail -n +3 web/engine/deckwright.js)
+
+      - name: Builder path (create, sim, LitNode compatibility)
+        run: |
+          node dist/cli.js create "$RUNNER_TEMP/ci-game" --title "CI Game"
+          node dist/cli.js sim "$RUNNER_TEMP/ci-game/games/ci-game.game.json" --matches 100
+          node dist/cli.js title "$RUNNER_TEMP/ci-game/games/ci-game.game.json" --out "$RUNNER_TEMP/rulesets"
+
+      - name: Package contents
+        run: npm pack --dry-run 2>&1 | grep -E "dist/cli.js|SKILL.md|LICENSE|NOTICE"

@@ -30,8 +30,11 @@ for (let m = 0; m < matches; m++) {
   const first = s.turn;
   const log: Array<Record<string, number>> = [];
   while (!rules.done(s)) {
+    // Deck phase: both sides declare in the same entry. Play phase: only the side to act moves.
     const x = bot(s);
-    const frame = { [players[0]]: 0, [players[1]]: 0, [s.p[s.turn].id]: x };
+    const frame = s.phase === 'decks'
+      ? { [players[0]]: bot(s, 0), [players[1]]: bot(s, 1) }
+      : { [players[0]]: 0, [players[1]]: 0, [s.p[s.turn].id]: x };
     const hand = s.p[s.turn].hand;
     s = rules.step(s, frame);
     if (s.last && (s.last & 7) === 1) { const c = game.cards[hand[(s.last >>> 3) & 15]]; cardsPlayed.set(c.id, (cardsPlayed.get(c.id) ?? 0) + 1); }

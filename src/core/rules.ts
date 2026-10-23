@@ -1,4 +1,4 @@
-import { decode, encode, endTurn, ENEMY_CHAMPION, enemyUnit, Op, OWN_CHAMPION, ownUnit, targetOf } from './actions';
+import { declare, declaredCard, decode, encode, endTurn, ENEMY_CHAMPION, enemyUnit, Op, OWN_CHAMPION, ownUnit, targetOf } from './actions';
 import type { CompiledGame } from './game';
 import { seededRandom, shuffle } from './rng';
 import type { AgentStats, CardDef, InitContext, MatchState, PlayerState, StatMapping, UnitState } from './types';
@@ -15,9 +15,12 @@ export interface Rules {
   scores(state: MatchState): Record<string, number>;
   serialize(state: MatchState): MatchState;
   view(state: MatchState): MatchView;
-  /** Every legal action for the player to act, END last. */
-  legalActions(state: MatchState): number[];
-  isLegal(state: MatchState, action: number): boolean;
+  /** Every legal action for the player to act, END last. In the deck phase: the declarations still open to that side. */
+  legalActions(state: MatchState, side?: 0 | 1): number[];
+  /** Legal for the player to act (play phase), or for `side` (deck phase; defaults to the player to act). */
+  isLegal(state: MatchState, action: number, side?: 0 | 1): boolean;
+  /** Declared-deck games: the side's next declaration from the suggested deck (bots, relay fallback), or 0 when done. */
+  suggestedDeclaration(state: MatchState, side: 0 | 1): number;
   /** The champion numbers a player gets from their ERC-6699 stats. */
   champion(stats?: AgentStats): { life: number; spellPower: number; unitAttack: number; openingHand: number };
 }
@@ -25,7 +28,10 @@ export interface Rules {
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 export function createRules(game: CompiledGame): Rules {
-  const { config, cards, cardElement, beats, deckList } = game;
+  const { config, cards, cardElement, beats, deckList, suggestedDeck } = game;
+  const declared = config.deckRules?.mode === 'declared';
+  const deckSize = config.deckRules?.size ?? 0;
+  const maxCopies = config.deckRules?.maxCopies ?? 0;
   const R = config.rules;
   const maxTicks = config.litnode.maxTicks;
 
@@ -206,19 +212,55 @@ export function createRules(game: CompiledGame): Rules {
     return out;
   };
 
+  // ---------------------------------------------------------- declared decks
+  const canDeclare = (s: MatchState, side: 0 | 1, x: number): boolean => {
+    if (s.phase !== 'decks' || decode(x).op !== Op.Declare) return false;
+    const c = declaredCard(x);
+    const mine = s.decl![side];
+    return c < cards.length && mine.length < deckSize && mine.filter((d) => d === c).length < maxCopies;
+  };
+  /** Both decks declared: shuffle each from the match seed, draw opening hands, start turn 1. */
+  const finishDecks = (s: MatchState): void => {
+    for (const i of [0, 1] as const) {
+      s.p[i].deck = shuffle(s.decl![i].slice(), seededRandom(`${s.seed}|deck|${i}`));
+      draw(s.p[i], s.opening![i]);
+    }
+    s.phase = 'play';
+    startTurn(s);
+  };
+  const suggestedDeclaration = (s: MatchState, side: 0 | 1): number => {
+    if (s.phase !== 'decks') return 0;
+    const mine = s.decl![side];
+    for (const c of suggestedDeck) {
+      const x = declare(c);
+      if (mine.filter((d) => d === c).length < suggestedDeck.filter((d) => d === c).length && canDeclare(s, side, x)) return x;
+    }
+    // The player's own picks used up the suggestion's copies: any legal card from the default deck, then any card.
+    for (const c of deckList) if (canDeclare(s, side, declare(c))) return declare(c);
+    for (let c = 0; c < cards.length; c++) if (canDeclare(s, side, declare(c))) return declare(c);
+    return 0;
+  };
+
   return {
     game,
     champion,
+    suggestedDeclaration,
     init(seed, participants, ctx = {}) {
       const rnd = seededRandom(String(seed));
       const ids = [String(participants[0]), String(participants[1])];
       const players = ids.map((id): PlayerState => {
         const ch = champion(ctx.agents?.[id]?.stats ?? {});
-        return { id, life: ch.life, maxLife: ch.life, energy: 0, energyCap: R.energyStart - R.energyPerTurn, spellPower: ch.spellPower, unitAttack: ch.unitAttack, deck: shuffle(deckList.slice(), rnd), hand: [], board: [], relics: [], fatigue: 0 };
+        return { id, life: ch.life, maxLife: ch.life, energy: 0, energyCap: R.energyStart - R.energyPerTurn, spellPower: ch.spellPower, unitAttack: ch.unitAttack, deck: declared ? [] : shuffle(deckList.slice(), rnd), hand: [], board: [], relics: [], fatigue: 0 };
       }) as [PlayerState, PlayerState];
       const first = (rnd() & 1) as 0 | 1;
-      ids.forEach((id, i) => draw(players[i], champion(ctx.agents?.[id]?.stats ?? {}).openingHand));
+      const opening = ids.map((id) => champion(ctx.agents?.[id]?.stats ?? {}).openingHand) as [number, number];
       const s: MatchState = { v: 1, beat: 0, turn: first, turnNo: 1, over: false, winner: -1, p: players, last: 0 };
+      if (declared) {
+        // Decks come from the log: both sides declare before turn 1, then finishDecks shuffles and deals.
+        Object.assign(s, { phase: 'decks', decl: [[], []], seed: String(seed), opening });
+        return s;
+      }
+      ids.forEach((_, i) => draw(players[i], opening[i]));
       startTurn(s);
       return s;
     },
@@ -232,6 +274,17 @@ export function createRules(game: CompiledGame): Rules {
         s.over = true;
         s.winner = quit0 && quit1 ? 2 : quit0 ? 1 : 0;
         s.last = quit0 ? frame(0) : frame(1);
+        return s;
+      }
+      if (s.phase === 'decks') {
+        // Both sides may declare in the same entry; an illegal declaration is a no-op like any other action.
+        s.last = 0;
+        for (const i of [0, 1] as const) {
+          const d = frame(i);
+          if (canDeclare(s, i, d)) { s.decl![i].push(declaredCard(d)); s.last = d; }
+        }
+        if (s.decl![0].length === deckSize && s.decl![1].length === deckSize) finishDecks(s);
+        finishOnCap(s);
         return s;
       }
       const x = frame(s.turn);
@@ -252,7 +305,11 @@ export function createRules(game: CompiledGame): Rules {
     },
     serialize: (s) => s,
     view: (s) => ({ ...s, p: s.p.map((pl) => ({ ...pl, deck: pl.deck.length })) }),
-    legalActions,
-    isLegal: (s, x) => !s.over && act(clone(s), x, true),
+    legalActions: (s, side) => {
+      if (s.phase !== 'decks') return legalActions(s);
+      const me = side ?? s.turn;
+      return cards.map((_, c) => declare(c)).filter((x) => canDeclare(s, me, x));
+    },
+    isLegal: (s, x, side) => !s.over && (s.phase === 'decks' ? canDeclare(s, side ?? s.turn, x) : (side === undefined || side === s.turn) && act(clone(s), x, true)),
   };
 }

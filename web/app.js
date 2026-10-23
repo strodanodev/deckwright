@@ -27,7 +27,11 @@ const byToken = new Map(snap.cards.map((c) => [String(c.tokenId), c]));
 document.title = `${game.title} · Deckwright`;
 $("game-title").textContent = game.title;
 $("collection-name").textContent = snap.collection.name;
-const artOf = (def) => (def.token ? byToken.get(String(def.token.tokenId))?.art : null) ?? null;
+// A card's art: its token's painting from the collection snapshot, else a local image the game names in "art"
+// (the CSP serves same-origin images only, so remote and ipfs:// URLs are skipped).
+// Element accents come from the game config (elements[].color), so a new theme needs no CSS edits.
+const ELEMENT_COLOR = Object.fromEntries(game.elements.filter((e) => /^#[0-9a-f]{3,8}$/i.test(e.color ?? "")).map((e) => [e.id, e.color]));
+const artOf = (def) => (def.token ? byToken.get(String(def.token.tokenId))?.art : null) ?? (def.art && !/^[a-z]+:/i.test(def.art) ? def.art : null);
 
 // ------------------------------------------------------------------ wallet (optional: marks the champions you hold)
 const wallet = createWallet();
@@ -53,6 +57,7 @@ async function refreshOwned() {
     console.warn("[duel] could not read holdings", e);
   }
   renderChampions();
+  if (DECK && !$("deck").hidden) renderDeck();
 }
 wallet.subscribe(() => { void refreshOwned(); });
 $("wallet").addEventListener("click", async () => {
@@ -105,7 +110,83 @@ for (const b of document.querySelectorAll(".pick-filter button")) {
 // ------------------------------------------------------------------ match
 let session = null, mine = null, foeChamp = null, pick = null, prev = null, recent = [];   // the last few moves, newest last
 
+// ------------------------------------------------------------------ wallet decks (deckRules.mode "declared")
+// Each player declares their own deck; the declarations open the match log, so the match replays anywhere.
+// Any card may be played by default (practice and casual). "Wallet deck" builds from the cards you hold. With
+// &owned=1 a two-player match accepts only held collection cards (support cards are always free); ranked play
+// will need the same check server-side, at match start.
+const DECK = game.deckRules?.mode === "declared" ? game.deckRules : null;
+const tokenOf = (def) => (def.token ? String(def.token.tokenId) : null);
+const deckKey = `deckwright.deck.${game.litnode.rulesetId}`;
+let deck = [], lastDeck = null;
+const requireOwned = () => !!RELAY && q.get("owned") === "1";
+const allowed = (def) => !requireOwned() || !tokenOf(def) || owned.has(tokenOf(def));
+const copies = (i) => deck.filter((d) => d === i).length;
+
+function openDeckBuilder(champion) {
+  mine = champion;
+  try { deck = JSON.parse(localStorage.getItem(deckKey) ?? "[]").filter((i) => Number.isInteger(i) && game.cards[i]); } catch { deck = []; }
+  deck = deck.filter((i) => allowed(game.cards[i])).slice(0, DECK.size);
+  $("deck-rule").textContent = `Pick ${DECK.size} cards, up to ${DECK.maxCopies} of each. ${requireOwned() ? "Owned-only match: collection cards must be in your wallet; support cards are always available." : "Any card is allowed in practice and casual matches; cards your wallet holds are marked, and Wallet deck builds from them."}`;
+  $("pick").hidden = true; if ($("build")) $("build").hidden = true; $("deck").hidden = false;
+  renderDeck();
+}
+
+function renderDeck() {
+  $("deck-count").textContent = `${deck.length} / ${DECK.size}`;
+  $("deck-start").disabled = deck.length !== DECK.size;
+  $("deck-wallet").hidden = owned.size === 0;
+  const grid = $("deck-cards");
+  grid.replaceChildren();
+  game.cards.forEach((def, i) => {
+    const ok = allowed(def), n = copies(i);
+    const tile = el("div", `deck-tile${ok ? "" : " locked"}${n ? " in" : ""}`);
+    const minus = el("button", null, "\u2212"), plus = el("button", null, "+");
+    minus.type = plus.type = "button";
+    minus.setAttribute("aria-label", `Remove ${def.name}`); plus.setAttribute("aria-label", `Add ${def.name}`);
+    minus.disabled = !n;
+    plus.disabled = !ok || n >= DECK.maxCopies || deck.length >= DECK.size;
+    minus.addEventListener("click", () => { deck.splice(deck.lastIndexOf(i), 1); renderDeck(); });
+    plus.addEventListener("click", () => { deck.push(i); renderDeck(); });
+    const qty = el("div", "qty");
+    qty.append(minus, el("span", null, `${n}`), plus);
+    const held = tokenOf(def) && owned.has(tokenOf(def));
+    tile.append(cardEl(def), qty, el("span", "note", !ok ? "Not in wallet" : held ? "Held" : tokenOf(def) ? "" : "Support"));
+    grid.append(tile);
+  });
+}
+
+$("deck-suggest").addEventListener("click", () => {
+  deck = [];
+  const room = (i) => allowed(game.cards[i]) && copies(i) < DECK.maxCopies && deck.length < DECK.size;
+  for (const i of rules.game.suggestedDeck) if (room(i)) deck.push(i);
+  for (const i of rules.game.deckList) if (room(i)) deck.push(i);   // fill what the wallet could not
+  for (let i = 0; i < game.cards.length && deck.length < DECK.size; i++) while (room(i)) deck.push(i);
+  renderDeck();
+});
+$("deck-wallet").addEventListener("click", () => {
+  // Held collection cards first (as many copies as the rules allow), then support cards, then the suggestion.
+  deck = [];
+  const room = (i) => allowed(game.cards[i]) && copies(i) < DECK.maxCopies && deck.length < DECK.size;
+  game.cards.forEach((def, i) => { if (tokenOf(def) && owned.has(tokenOf(def))) while (room(i)) deck.push(i); });
+  game.cards.forEach((def, i) => { if (!tokenOf(def)) while (room(i)) deck.push(i); });
+  for (const i of rules.game.suggestedDeck) if (room(i)) deck.push(i);
+  renderDeck();
+});
+$("deck-clear").addEventListener("click", () => { deck = []; renderDeck(); });
+$("deck-back").addEventListener("click", () => { $("deck").hidden = true; $("pick").hidden = false; if ($("build")) $("build").hidden = false; });
+$("deck-start").addEventListener("click", () => {
+  try { localStorage.setItem(deckKey, JSON.stringify(deck)); } catch { /* private mode: the deck just isn't remembered */ }
+  lastDeck = deck.slice();
+  $("deck").hidden = true;
+  beginMatch(mine, lastDeck);
+});
+
 function start(champion) {
+  if (DECK) openDeckBuilder(champion); else beginMatch(champion, null);
+}
+
+function beginMatch(champion, declaredDeck) {
   session?.close();
   mine = champion;
   const others = snap.cards.filter((c) => c !== champion);
@@ -118,6 +199,8 @@ function start(champion) {
   pick = null; prev = null; recent = [];
   session.onChange(render);
   $("pick").hidden = true; $("result").hidden = true; $("board").hidden = false;
+  if ($("build")) $("build").hidden = true;
+  if (declaredDeck) session.declareDeck(declaredDeck);
   render();
 }
 
@@ -134,6 +217,7 @@ function cardEl(def, { unit = null, small = false } = {}) {
   const b = el("button", `card ${def.type}${small ? " small" : ""}`);
   b.type = "button";
   b.dataset.el = def.element;
+  if (ELEMENT_COLOR[def.element]) b.style.setProperty("--el", ELEMENT_COLOR[def.element]);
   const art = artOf(def);
   if (art) { const img = el("img"); img.src = art; img.alt = ""; b.append(img); }
   else b.append(el("div", "glyph", def.type === "spell" ? "✦" : def.type === "relic" ? "◆" : "⚔"));
@@ -192,6 +276,14 @@ function narrate(before, s, meIdx) {
 function render() {
   const s = session?.state;
   if (!s) { $("status").textContent = session?.status ?? ""; return; }
+  if (s.phase === "decks") {
+    // Two-player: waiting for both declarations (the relay fills a missing deck with the suggested one at its deadline).
+    for (const id of ["foe-hero", "my-hero", "foe-relics", "my-relics", "foe-lane", "my-lane", "hand"]) $(id).replaceChildren();
+    const meIdx = s.p[0].id === session.you ? 0 : 1;
+    $("status").textContent = `Declaring decks \u00b7 you ${s.decl[meIdx].length}/${DECK.size} \u00b7 opponent ${s.decl[1 - meIdx].length}/${DECK.size}`;
+    $("end").disabled = true;
+    return;
+  }
   const meIdx = s.p[0].id === session.you ? 0 : 1;
   const me = s.p[meIdx], foe = s.p[meIdx === 0 ? 1 : 0];
   if (s !== prev) narrate(prev, s, meIdx);   // a re-render for a pick is not a new action
@@ -273,9 +365,18 @@ $("concede").addEventListener("click", () => {
   b.textContent = "Really concede?";
   concedeArmed = setTimeout(() => { concedeArmed = null; b.textContent = "Concede"; }, 3000);
 });
-$("again").addEventListener("click", () => start(mine));
-$("change").addEventListener("click", () => { session?.close(); session = null; $("result").hidden = true; $("board").hidden = true; $("pick").hidden = false; });
+$("again").addEventListener("click", () => (lastDeck ? beginMatch(mine, lastDeck) : start(mine)));
+$("change").addEventListener("click", () => { session?.close(); session = null; lastDeck = null; $("result").hidden = true; $("board").hidden = true; $("pick").hidden = false; if ($("build")) $("build").hidden = false; });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pick) { pick = null; render(); } });
+
+// "Build your own" copy buttons (demo site only; the section is not in scaffolded games).
+for (const b of document.querySelectorAll("[data-copy]")) {
+  b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($(b.dataset.copy).textContent); b.textContent = "Copied"; }
+    catch { b.textContent = "Select it"; }
+    setTimeout(() => { b.textContent = "Copy"; }, 1600);
+  });
+}
 
 renderChampions();
 void refreshOwned();

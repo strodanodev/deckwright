@@ -8,8 +8,10 @@ export interface CompiledGame {
   cardElement: number[];
   /** `beats[a][b]`: element a deals bonus damage to element b. */
   beats: boolean[][];
-  /** The deck as card indices, before shuffling. */
+  /** The default deck as card indices, before shuffling. */
   deckList: number[];
+  /** Declared-deck games: the suggested declaration (deckRules.size cards spread over the default deck). */
+  suggestedDeck: number[];
   cardIndex: Record<string, number>;
 }
 
@@ -91,6 +93,15 @@ export function validateGame(cfg: GameConfig): string[] {
     deckSize += Number.isInteger(n) ? n : 0;
   }
   need(deckSize >= 5 && deckSize <= 120, `deck must hold 5-120 cards (has ${deckSize})`);
+
+  const dr = cfg.deckRules;
+  if (dr !== undefined) {
+    need(dr.mode === 'fixed' || dr.mode === 'declared', 'deckRules.mode must be "fixed" or "declared"');
+    need(isInt(dr.size, 5, 60), 'deckRules.size must be an integer 5-60');
+    need(isInt(dr.maxCopies, 1, 10), 'deckRules.maxCopies must be an integer 1-10');
+    need(cfg.cards?.length <= 0x7fff, 'a declared-deck game can address at most 32767 cards');
+    if (dr.mode === 'declared' && isInt(dr.size, 5, 60)) need(deckSize >= dr.size, `the default deck (${deckSize} cards) must hold at least deckRules.size (${dr.size}): it is the suggested and fallback deck`);
+  }
   return errs;
 }
 
@@ -105,5 +116,16 @@ export function compileGame(cfg: GameConfig): CompiledGame {
   const deckList: number[] = [];
   // Object key order is insertion order for string keys, so this is stable across machines.
   for (const [id, n] of Object.entries(cfg.deck)) for (let i = 0; i < n; i++) deckList.push(cardIndex[id]);
-  return { config: cfg, cards: cfg.cards, cardElement: cfg.cards.map((c) => elementIndex[c.element]), beats, deckList, cardIndex };
+  return { config: cfg, cards: cfg.cards, cardElement: cfg.cards.map((c) => elementIndex[c.element]), beats, deckList, suggestedDeck: suggestDeck(deckList, cfg.deckRules), cardIndex };
+}
+
+/** deckRules.size cards spread evenly over the default deck, within maxCopies (a sensible curve, deterministic). */
+function suggestDeck(deckList: number[], rules: GameConfig['deckRules']): number[] {
+  if (!rules || rules.mode !== 'declared') return [];
+  const out: number[] = [];
+  const count: Record<number, number> = {};
+  const take = (c: number): void => { if (out.length < rules.size && (count[c] ?? 0) < rules.maxCopies) { out.push(c); count[c] = (count[c] ?? 0) + 1; } };
+  for (let i = 0; i < rules.size; i++) take(deckList[Math.floor((i * deckList.length) / rules.size)]);
+  for (const c of deckList) take(c); // fill any gaps left by maxCopies
+  return out;
 }

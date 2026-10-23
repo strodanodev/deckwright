@@ -17,6 +17,7 @@
   <span class="brand">Deckwright</span>
   <h1 id="game-title">Duel</h1>
   <div class="top-right">
+    <!-- deckwright:funnel --><a class="build-link" href="#build">Build your own</a><!-- /deckwright:funnel -->
     <span id="mode" class="pill">Practice</span>
     <button id="wallet" class="ghost" type="button">Connect wallet</button>
   </div>
@@ -31,6 +32,48 @@
     <button type="button" data-filter="owned" aria-pressed="false">Held by me</button>
   </div>
   <div id="champions" class="champions"></div>
+</section>
+
+<!-- deckwright:funnel -->
+<section id="build" class="build" aria-labelledby="build-title">
+  <p class="kicker">Open source · Apache-2.0</p>
+  <h2 id="build-title">Build your own trading card game</h2>
+  <p class="lede">This duel is one JSON file. Deckwright turns any NFT collection into a card set, its on-chain ERC-6699 stats into champions, and gives you the rules engine, a bot, two-player play and a site you can deploy in minutes.</p>
+  <ol class="steps">
+    <li>
+      <h3>Create a game</h3>
+      <div class="cmd"><code id="cmd-create">npx github:strodanodev/deckwright create my-tcg</code><button type="button" class="copy" data-copy="cmd-create" aria-label="Copy command">Copy</button></div>
+      <p>Scaffolds a playable game, its site, and an AI skill that knows the whole workflow.</p>
+    </li>
+    <li>
+      <h3>Bring a collection</h3>
+      <div class="cmd"><code id="cmd-snapshot">npx deckwright snapshot &lt;collection address&gt; --chain liteforge</code><button type="button" class="copy" data-copy="cmd-snapshot" aria-label="Copy command">Copy</button></div>
+      <p>Reads any ERC-721 from chain: names, art and ERC-6699 stats. Then <code>import</code> makes the cards.</p>
+    </li>
+    <li>
+      <h3>Balance, play, ship</h3>
+      <div class="cmd"><code id="cmd-play">npm run sim &amp;&amp; npm run dev</code><button type="button" class="copy" data-copy="cmd-play" aria-label="Copy command">Copy</button></div>
+      <p>Bot-vs-bot balance numbers, a local site, then one static deploy. LitNode-ready rulesets for on-chain settlement.</p>
+    </li>
+  </ol>
+  <p class="links"><a class="forge" href="https://github.com/strodanodev/deckwright" rel="noopener">Get Deckwright on GitHub</a> <a class="ghost" href="https://github.com/strodanodev/deckwright#readme" rel="noopener">Read the guide</a></p>
+  <p class="fine">Rapture characters in this demo are © LitVM Games and not part of the open-source license. To use them in your own game, <a href="https://github.com/strodanodev/deckwright/issues/new?labels=rapture-license&amp;title=Rapture%20character%20use%20request" rel="noopener">request permission</a>.</p>
+</section>
+<!-- /deckwright:funnel -->
+
+<section id="deck" class="pick deckbuild" hidden aria-labelledby="deck-title">
+  <p class="kicker">Wallet deck</p>
+  <h2 id="deck-title">Build your deck</h2>
+  <p class="lede" id="deck-rule"></p>
+  <div class="deck-bar">
+    <span class="deck-count" id="deck-count" aria-live="polite"></span>
+    <button type="button" class="ghost" id="deck-wallet" hidden>Wallet deck</button>
+    <button type="button" class="ghost" id="deck-suggest">Suggested deck</button>
+    <button type="button" class="ghost" id="deck-clear">Clear</button>
+    <button type="button" class="ghost" id="deck-back">Back</button>
+    <button type="button" class="forge" id="deck-start" disabled>Start duel</button>
+  </div>
+  <div id="deck-cards" class="deck-cards"></div>
 </section>
 
 <section id="board" class="board" hidden aria-label="Duel board">

@@ -7,7 +7,7 @@ import type { MatchState } from './types';
  * ends the turn when nothing helps. Used by the offline client, the headless sim and as a
  * stand-in for AFK players in tests. Not part of any ruleset.
  */
-export function greedyBot(rules: Rules): (state: MatchState) => number {
+export function greedyBot(rules: Rules): (state: MatchState, side?: 0 | 1) => number {
   const score = (s: MatchState, me: 0 | 1): number => {
     if (s.over) return s.winner === me ? 1e6 : s.winner === 2 ? 0 : -1e6;
     const P = s.p[me], E = s.p[me === 0 ? 1 : 0];
@@ -15,7 +15,8 @@ export function greedyBot(rules: Rules): (state: MatchState) => number {
     // Relics pay off over turns and spare energy enables more plays, so both count a little.
     return (P.life - E.life) * 3 + board(P.board) - board(E.board) + P.hand.length - E.hand.length + P.relics.length * 4 + P.energy * 0.5;
   };
-  return (state) => {
+  return (state, side = state.turn) => {
+    if (state.phase === 'decks') return rules.suggestedDeclaration(state, side);
     const me = state.turn;
     const id = state.p[me].id;
     let best = 0, bestScore = -Infinity;

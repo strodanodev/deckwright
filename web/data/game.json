@@ -2,7 +2,7 @@
   "title": "Rapture Duel",
   "description": "Card duel built from Rapture — ARC 1 (0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721 on chain 4441).",
   "litnode": {
-    "rulesetId": "rapture-duel.v1",
+    "rulesetId": "rapture-duel.v2",
     "tickRate": 4,
     "maxTicks": 600,
     "modes": [
@@ -1037,5 +1037,10 @@
     "tempering": 2,
     "bellows": 2,
     "eternal-forge": 2
+  },
+  "deckRules": {
+    "mode": "declared",
+    "size": 30,
+    "maxCopies": 2
   }
 }

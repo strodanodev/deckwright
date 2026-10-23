@@ -33,6 +33,25 @@ button { font: inherit; color: inherit; }
 .pick-filter button { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; cursor: pointer;
                       font: 600 13px ui-sans-serif, system-ui, sans-serif; }
 .pick-filter button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+/* ------------------------------------------------------------------ build your own (demo site only) */
+.build { max-width: 1100px; margin: 0 auto; padding: 8px 16px 72px; border-top: 1px solid var(--line); }
+.build h2 { font: 700 26px/1.2 "Cinzel", Georgia, serif; margin: 24px 0 6px; }
+.steps { list-style: none; counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 0; margin: 16px 0; }
+.steps li { counter-increment: step; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.steps h3 { margin: 0 0 8px; font: 700 15px "Cinzel", Georgia, serif; }
+.steps h3::before { content: counter(step) ". "; color: var(--gold); }
+.steps p { margin: 8px 0 0; color: var(--dim); font-size: 14px; }
+.cmd { display: flex; gap: 6px; align-items: center; background: #0f0d0a; border: 1px solid var(--line); border-radius: 8px; padding: 6px 6px 6px 10px; }
+.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 12px ui-monospace, Consolas, monospace; color: var(--ink); }
+code { font: 12px ui-monospace, Consolas, monospace; }
+.copy { flex: none; font: 600 11px ui-sans-serif, system-ui, sans-serif; background: transparent; color: var(--gold); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 10px; }
+.links a { text-decoration: none; display: inline-block; }
+.fine { color: var(--dim); font-size: 13px; }
+.fine a, .lede a { color: #ffd37a; }
+.made { text-align: center; padding: 0 16px 24px; }
+.build-link { font: 600 13px ui-sans-serif, system-ui, sans-serif; color: var(--gold); text-decoration: none; }
+.build-link:hover { text-decoration: underline; }
 .champions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .champ { position: relative; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
          padding: 0; overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s; }
@@ -44,6 +63,19 @@ button { font: inherit; color: inherit; }
 .champ .owned { position: absolute; top: 8px; right: 8px; font: 700 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em;
                 text-transform: uppercase; color: #2a1606; background: var(--gold); border-radius: 6px; padding: 2px 6px; }
 .champ .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 6px; font: 11px ui-monospace, Consolas, monospace; color: var(--dim); }
+
+/* ------------------------------------------------------------------ deck builder */
+.deck-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 0; background: var(--bg); }
+.deck-count { font: 900 18px "Cinzel", Georgia, serif; color: var(--gold); margin-right: auto; }
+.deck-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+.deck-tile { display: grid; gap: 6px; justify-items: center; }
+.deck-tile .card { --card-w: 112px; }
+.deck-tile.locked .card { opacity: .35; }
+.deck-tile .qty { display: flex; gap: 6px; align-items: center; font: 700 13px ui-sans-serif, system-ui, sans-serif; }
+.deck-tile .qty button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; font-weight: 900; }
+.deck-tile .qty button:disabled { opacity: .35; cursor: default; }
+.deck-tile .note { font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); min-height: 12px; }
+.deck-tile.in .card { box-shadow: 0 0 0 2px var(--gold); }
 
 /* ------------------------------------------------------------------ board */
 /* The whole board fits one viewport: cards scale with its height. */
@@ -121,7 +153,7 @@ button { font: inherit; color: inherit; }
   .my-row .controls { margin-left: 0; }
   .top { gap: 10px; padding: 10px 12px; }
   .top h1 { font-size: 18px; }
-  .top .pill { display: none; }
+  .top .pill, .build-link { display: none; }
   .top .ghost { padding: 6px 10px; }
   .board { gap: 6px; padding: 6px 10px 8px; }
   .forge { padding: 9px 16px; font-size: 13px; }

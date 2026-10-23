@@ -105,6 +105,19 @@ export interface RulesConfig {
   secondPlayerEnergy: number;
 }
 
+/**
+ * 'declared': each player declares their own deck (for example the cards their wallet holds) as the first
+ * entries of the match log, one card per entry, before turn 1. The log stays the whole truth, so any node
+ * or witness replays it; ownership is checked by the client and relay, not by the rules.
+ */
+export interface DeckRules {
+  mode: 'fixed' | 'declared';
+  /** Cards per declared deck. */
+  size: number;
+  /** Copies of one card allowed in a declared deck. */
+  maxCopies: number;
+}
+
 export interface LitNodeConfig {
   /** `name.vN`. Bump N on any rules or card change: a new version is a new ruleset. */
   rulesetId: string;
@@ -129,8 +142,13 @@ export interface GameConfig {
   champion: ChampionConfig;
   rules: RulesConfig;
   cards: CardDef[];
-  /** Every player plays this deck: `{ cardId: copies }`. */
+  /**
+   * The default deck: `{ cardId: copies }`. With `deckRules.mode: 'fixed'` (the default) every player plays
+   * it; with `'declared'` it is the suggested deck and the fallback for a player who does not declare one.
+   */
   deck: Record<string, number>;
+  /** How decks are chosen. Omit for 'fixed'. */
+  deckRules?: DeckRules;
   /** Optional card back for the client. */
   cardBack?: string;
 }
@@ -176,6 +194,14 @@ export interface MatchState {
   p: [PlayerState, PlayerState];
   /** Last accepted action, for UI and animation. 0 when the beat was a no-op. */
   last: number;
+  /** Declared-deck matches only: 'decks' until both decks are declared, then 'play'. */
+  phase?: 'decks' | 'play';
+  /** Declared-deck matches only: the cards each side has declared so far (card indices). */
+  decl?: [number[], number[]];
+  /** Declared-deck matches only: the match seed (decks are shuffled once both are declared). */
+  seed?: string;
+  /** Declared-deck matches only: each side's opening hand size, drawn once decks are declared. */
+  opening?: [number, number];
 }
 
 /** What LitNode passes `init` as `ctx`. */

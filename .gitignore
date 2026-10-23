@@ -3,5 +3,6 @@ dist/
 rulesets/
 .vercel/
 DEPLOY.local.md
+*.draft.md
 *.log
 .DS_Store

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { attack, compileGame, concede, createRules, decode, endTurn, greedyBot, Op, play, validateGame } from '../src/core/index';
+import { attack, compileGame, concede, createRules, declare, decode, endTurn, greedyBot, Op, play, validateGame } from '../src/core/index';
 import type { GameConfig, MatchState } from '../src/core/index';
 
 const load = (p: string): GameConfig => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8')) as GameConfig;
@@ -35,9 +35,10 @@ function playOut(cfg: GameConfig, seed: string): { final: MatchState; log: Array
   let s = rules.init(seed, ['a', 'b'], ctx);
   const log: Array<Record<string, number>> = [];
   while (!rules.done(s)) {
-    const x = bot(s);
-    assert.ok(rules.isLegal(s, x));
-    const frame = { a: 0, b: 0, [s.p[s.turn].id]: x };
+    // Deck phase (declared-deck games): both sides declare in one entry. Play phase: the side to act.
+    const frame = s.phase === 'decks'
+      ? { a: bot(s, 0), b: bot(s, 1) }
+      : (() => { const x = bot(s); assert.ok(rules.isLegal(s, x)); return { a: 0, b: 0, [s.p[s.turn].id]: x }; })();
     s = rules.step(s, frame);
     log.push(frame);
   }
@@ -80,4 +81,31 @@ test('ERC-6699 stats map into the configured bounds', () => {
   assert.equal(lo.life, STARTER.champion.life.min);
   assert.equal(hi.life, STARTER.champion.life.max);
   assert.equal(hi.openingHand, STARTER.champion.openingHand.max);
+});
+
+test('declared decks: each side declares its own cards, shuffled from the seed, then play starts', () => {
+  const cfg: GameConfig = { ...STARTER, deckRules: { mode: 'declared', size: 10, maxCopies: 2 } };
+  assert.deepEqual(validateGame(cfg), []);
+  const rules = createRules(compileGame(cfg));
+  const idx = (id: string): number => cfg.cards.findIndex((c) => c.id === id);
+  // Two copies each of five cards: exactly the 10-card size, within maxCopies.
+  const mine = ['ember-scout', 'spark', 'tide-warden', 'quake', 'storm-hawk'].flatMap((id) => [idx(id), idx(id)]);
+  let s = rules.init('decks', ['a', 'b'], {});
+  assert.equal(s.phase, 'decks');
+  assert.equal(s.p[0].hand.length, 0);
+  // A third copy is over maxCopies: a no-op, never a throw.
+  const after = rules.step(rules.step(rules.step(s, { a: declare(idx('spark')) }), { a: declare(idx('spark')) }), { a: declare(idx('spark')) });
+  assert.equal(after.decl![0].length, 2);
+  assert.equal(rules.isLegal(after, declare(idx('spark')), 0), false);
+  assert.equal(rules.isLegal(after, play(0), 0), false, 'no play actions before both decks are in');
+  for (let i = 0; i < 10; i++) s = rules.step(s, { a: declare(mine[i]), b: rules.suggestedDeclaration(s, 1) });
+  assert.equal(s.phase, 'play');
+  const all = [...s.p[0].deck, ...s.p[0].hand].sort();
+  assert.deepEqual(all, [...mine].sort(), 'side a plays exactly the cards it declared');
+  assert.ok(s.p[0].hand.length > 0 && s.turnNo === 1);
+});
+
+test('declared decks: validation needs a default deck large enough to suggest from', () => {
+  const errs = validateGame({ ...STARTER, deckRules: { mode: 'declared', size: 60, maxCopies: 2 } });
+  assert.ok(errs.some((e) => e.includes('deckRules.size')));
 });

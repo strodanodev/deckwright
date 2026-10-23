@@ -13,8 +13,32 @@ The types are defined in `src/core/types.ts` and validated by `validateGame()` i
 | `champion` | object | How ERC-6699 stats become champion numbers |
 | `rules` | object | Board and economy numbers |
 | `cards` | `CardDef[]` | The card pool |
-| `deck` | `{ cardId: copies }` | Every player plays this deck (5–120 cards). Shuffled per player from the match seed |
+| `deck` | `{ cardId: copies }` | The default deck (5–120 cards). With fixed decks every player plays it; with declared decks it's the suggested and fallback deck. Shuffled per player from the match seed |
+| `deckRules` | `{ mode, size, maxCopies }`? | How decks are chosen; omit for `fixed`. See below |
 | `cardBack` | string? | Asset path for the client |
+
+## `deckRules` (wallet decks)
+
+| Field | Values | Notes |
+|---|---|---|
+| `mode` | `"fixed"` (default) or `"declared"` | `declared`: each player brings their own deck, for example the cards their wallet holds |
+| `size` | 5–60 | Cards per declared deck. The default `deck` must hold at least this many |
+| `maxCopies` | 1–10 | Copies of one card allowed |
+
+**How declared decks work**
+1. The match opens in a **deck phase**: each player sends one `declare(cardIndex)` per card, and both sides may declare in the same log entry.
+2. Once both decks are full, each is shuffled from the match seed (`<seed>|deck|<side>`), opening hands are drawn, and turn 1 starts.
+3. Everything is in the input log, so a LitNode node replays it with no extra data.
+
+**Who may play which card**
+- **Ownership** is checked by the client, and the relay can check it too; the rules don't. Casual play accepts any card.
+- **Owned-only test:** add `&owned=1` to the site URL to try owned-only two-player matches.
+- **Ranked play** needs a server-side ownership check at match start.
+
+**Helpers**
+- `rules.suggestedDeclaration(state, side)` fills a deck from the suggestion. Bots use it, and so does the relay when a player hasn't declared by its deadline (`TCG_DECK_MS`, default 90 s).
+
+Balance tip: smaller decks raise the first-player advantage. Rapture Duel uses 30 cards, which gives about 56% first-player wins with `secondPlayerEnergy: 1`.
 
 ## `litnode`
 
@@ -92,7 +116,7 @@ Keep the ranges narrow: the spread is how much NFT stats matter.
 
 | Part | Values |
 |---|---|
-| `op` | 1 play, 2 attack, 3 end turn, 4 concede |
+| `op` | 1 play, 2 attack, 3 end turn, 4 concede, 5 declare (deck phase; bits 3–17 are the card index) |
 | `a` | Hand index (play) or board slot (attack) |
 | `target` | 0 enemy champion; 1–9 enemy unit at slot+1; 10 own champion; 11–15 own unit at slot+11 |
 

@@ -1,0 +1,23 @@
+{
+  "name": "deckwright",
+  "owner": {
+    "name": "strodanodev",
+    "url": "https://github.com/strodanodev"
+  },
+  "description": "Deckwright: the Web3 TCG game maker, as a Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "deckwright",
+      "source": "./plugin",
+      "description": "Build, balance, ship and host an NFT trading card game with Deckwright.",
+      "version": "0.2.0",
+      "category": "development",
+      "tags": [
+        "tcg",
+        "nft",
+        "web3",
+        "game-maker"
+      ]
+    }
+  ]
+}

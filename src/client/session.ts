@@ -1,4 +1,4 @@
-import { concede } from '../core/actions';
+import { concede, declare } from '../core/actions';
 import { greedyBot } from '../core/bot';
 import type { Rules } from '../core/rules';
 import type { AgentStats, MatchState } from '../core/types';
@@ -19,6 +19,8 @@ export interface MatchSession {
   readonly champions: Record<string, Champion | undefined>;
   onChange(cb: () => void): void;
   act(x: number): void;
+  /** Declared-deck games: declare this deck (card indices). Sessions without a deck phase ignore it. */
+  declareDeck(cards: number[]): void;
   concede(): void;
   close(): void;
 }
@@ -53,19 +55,31 @@ abstract class BaseSession implements MatchSession {
 
   public concede(): void { this.act(concede()); }
   public abstract act(x: number): void;
+  public abstract declareDeck(cards: number[]): void;
   public abstract close(): void;
 }
 
 /** Offline: you against the greedy bot. Nothing is recorded or settled. */
 export class LocalBotSession extends BaseSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private readonly bot: (s: MatchState) => number;
+  private readonly bot: (s: MatchState, side?: 0 | 1) => number;
 
   constructor(rules: Rules, seed = `${Date.now()}`, stats: AgentStats = {}, botStats: AgentStats = {}) {
     super(rules, 'you');
     this.bot = greedyBot(rules);
     this.begin(seed, ['you', 'bot'], { you: stats, bot: botStats });
     this.status = 'practice vs bot';
+    this.botTurn();
+  }
+
+  /** Both decks go into the log at once: your cards on your side, the suggested deck on the bot's. */
+  public declareDeck(cards: number[]): void {
+    // Cards that are not legal (unknown, over maxCopies) are no-ops; the suggested deck fills any gap.
+    for (let i = 0; this.state?.phase === 'decks' && i < 200; i++) {
+      const mine = cards[i] !== undefined ? declare(cards[i]) : this.rules.suggestedDeclaration(this.state, 0);
+      this.apply({ k: this.entries.length, inputs: [mine, this.bot(this.state, 1)] });
+    }
+    this.changed();
     this.botTurn();
   }
 
@@ -81,7 +95,7 @@ export class LocalBotSession extends BaseSession {
 
   private botTurn(): void {
     const s = this.state;
-    if (!s || s.over || s.p[s.turn].id !== 'bot') return;
+    if (!s || s.over || s.phase === 'decks' || s.p[s.turn].id !== 'bot') return; // decks are declared together in declareDeck
     this.timer = setTimeout(() => {
       if (!this.state || this.state.over) return;
       const side = this.state.turn;
@@ -152,6 +166,7 @@ export class RelaySession extends BaseSession {
         this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, champions[p]?.stats ?? {}])));
         for (const e of (m.entries as Entry[]) ?? []) this.apply(e);
         this.changed('live');
+        if (this.pendingDeck) { const d = this.pendingDeck; this.pendingDeck = null; this.declareDeck(d); }
         break;
       }
       case 'entry':
@@ -184,6 +199,13 @@ export class RelaySession extends BaseSession {
   }
 
   public act(x: number): void { this.ws?.send(JSON.stringify({ t: 'act', x })); }
+
+  private pendingDeck: number[] | null = null;
+  /** Sends one declaration per card; before the match starts, they wait for it. */
+  public declareDeck(cards: number[]): void {
+    if (!this.state) { this.pendingDeck = cards; return; }
+    if (this.state.phase === 'decks') for (const c of cards) this.act(declare(c));
+  }
   public close(): void { this.ws?.close(); this.shell?.close(); }
 }
 
