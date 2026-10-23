@@ -1,0 +1,60 @@
+{
+  "name": "deckwright",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deckwright: a lightweight Web3 trading card game maker. One JSON file is a game; ERC-6699 agents are champions; matches replay deterministically and are ready for LitNode settlement.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/strodanodev/deckwright.git"
+  },
+  "homepage": "https://github.com/strodanodev/deckwright#readme",
+  "bugs": {
+    "url": "https://github.com/strodanodev/deckwright/issues"
+  },
+  "type": "module",
+  "bin": {
+    "deckwright": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "templates",
+    "web/index.html",
+    "web/app.js",
+    "web/app.css",
+    "web/favicon.svg",
+    "web/lib",
+    "vercel.json",
+    ".claude/skills",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "deckwright": "tsx src/cli.ts",
+    "new": "tsx src/cli.ts new",
+    "import": "tsx src/cli.ts import",
+    "snapshot": "tsx src/cli.ts snapshot",
+    "sim": "tsx src/cli.ts sim",
+    "title": "tsx src/cli.ts title",
+    "web": "tsx src/cli.ts web",
+    "relay": "tsx src/cli.ts relay",
+    "dev": "tsx src/cli.ts dev",
+    "build": "node scripts/build-cli.mjs",
+    "prepare": "node scripts/build-cli.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"test/*.test.*\""
+  },
+  "dependencies": {
+    "esbuild": "0.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.3",
+    "tsx": "4.23.7",
+    "typescript": "6.0.3"
+  }
+}

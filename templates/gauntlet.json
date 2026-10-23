@@ -1,0 +1,16 @@
+{
+  "$comment": "LitNode gauntlet config for a Deckwright title (node/gauntlet.js). Copy it, set cwd to your game checkout (pnpm install at its root) and TCG_GAME to your config, then in the node's environment: GAUNTLETS=<rulesetId>=<absolute path to your copy>, GAUNTLET_GATEWAY_PORT=8478, RULESETS=<path to rulesets/<rulesetId>.js>. The node spawns one server per placed match; it seats players by ticket, orders the log, collects both signatures and posts to /ledger.",
+  "command": "${node}",
+  "args": ["node_modules/tsx/dist/cli.mjs", "src/tools/relay.ts"],
+  "cwd": "C:/litvm/deckwright",
+  "env": {
+    "TCG_GAME": "games/my-game.game.json",
+    "TCG_TURN_MS": "60000",
+    "TCG_DISCONNECT_MS": "30000"
+  },
+  "portRange": [7860, 7899],
+  "readyMs": 30000,
+  "ttlMs": 1800000,
+  "ticketTtlMs": 900000,
+  "settledGraceMs": 3000
+}

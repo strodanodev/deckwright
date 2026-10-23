@@ -1,0 +1,77 @@
+{
+  "title": "Starter Duel",
+  "description": "A two-player NFT card duel. Champions are ERC-6699 agents; matches settle on LitNode.",
+  "litnode": {
+    "rulesetId": "starter-duel.v1",
+    "tickRate": 4,
+    "maxTicks": 600,
+    "modes": ["ranked", "casual"],
+    "eloK": 24
+  },
+  "elements": [
+    { "id": "neutral", "name": "Neutral", "color": "#b8b8b8" },
+    { "id": "fire", "name": "Fire", "beats": ["air"], "color": "#ff6a3d" },
+    { "id": "water", "name": "Water", "beats": ["fire"], "color": "#3da5ff" },
+    { "id": "earth", "name": "Earth", "beats": ["water"], "color": "#8fbf4a" },
+    { "id": "air", "name": "Air", "beats": ["earth"], "color": "#d8f0ff" }
+  ],
+  "champion": {
+    "life": { "stat": "resilience", "min": 22, "max": 32 },
+    "spellPower": { "stat": "intelligence", "min": 0, "max": 2 },
+    "unitAttack": { "stat": "strength", "min": 0, "max": 1 },
+    "openingHand": { "stat": "agility", "min": 3, "max": 5 }
+  },
+  "rules": {
+    "boardSlots": 5,
+    "relicSlots": 2,
+    "handLimit": 8,
+    "energyStart": 1,
+    "energyMax": 10,
+    "energyPerTurn": 1,
+    "elementBonus": 1,
+    "fatigue": true,
+    "secondPlayerEnergy": 1
+  },
+  "cards": [
+    { "id": "forge-apprentice", "name": "Forge Apprentice", "type": "unit", "element": "neutral", "cost": 1, "attack": 1, "health": 2, "rarity": "common" },
+    { "id": "ember-scout", "name": "Ember Scout", "type": "unit", "element": "fire", "cost": 1, "attack": 2, "health": 1, "keywords": ["haste"], "rarity": "common" },
+    { "id": "tide-warden", "name": "Tide Warden", "type": "unit", "element": "water", "cost": 2, "attack": 1, "health": 4, "keywords": ["guard"], "rarity": "common" },
+    { "id": "gale-runner", "name": "Gale Runner", "type": "unit", "element": "air", "cost": 2, "attack": 3, "health": 2, "keywords": ["haste"], "rarity": "uncommon" },
+    { "id": "stone-sentinel", "name": "Stone Sentinel", "type": "unit", "element": "earth", "cost": 3, "attack": 2, "health": 5, "keywords": ["guard"], "rarity": "uncommon" },
+    { "id": "storm-hawk", "name": "Storm Hawk", "type": "unit", "element": "air", "cost": 3, "attack": 3, "health": 3, "keywords": ["haste"], "rarity": "rare" },
+    { "id": "anvil-golem", "name": "Anvil Golem", "type": "unit", "element": "neutral", "cost": 4, "attack": 3, "health": 6, "rarity": "uncommon" },
+    { "id": "ember-vanguard", "name": "Ember Vanguard", "type": "unit", "element": "fire", "cost": 4, "attack": 5, "health": 4, "rarity": "rare" },
+    { "id": "basalt-titan", "name": "Basalt Titan", "type": "unit", "element": "earth", "cost": 5, "attack": 4, "health": 7, "keywords": ["guard"], "rarity": "epic" },
+    { "id": "deepwater-leviathan", "name": "Deepwater Leviathan", "type": "unit", "element": "water", "cost": 6, "attack": 6, "health": 7, "rarity": "legendary" },
+    { "id": "spark", "name": "Spark", "type": "spell", "element": "fire", "cost": 1, "effect": { "op": "damage", "amount": 2 }, "rarity": "common" },
+    { "id": "quake", "name": "Quake", "type": "spell", "element": "earth", "cost": 3, "effect": { "op": "damage", "amount": 4 }, "rarity": "uncommon" },
+    { "id": "tidal-mend", "name": "Tidal Mend", "type": "spell", "element": "water", "cost": 2, "effect": { "op": "heal", "amount": 5 }, "rarity": "common" },
+    { "id": "tailwind", "name": "Tailwind", "type": "spell", "element": "air", "cost": 1, "effect": { "op": "draw", "amount": 2 }, "rarity": "uncommon" },
+    { "id": "tempering", "name": "Tempering", "type": "spell", "element": "neutral", "cost": 1, "effect": { "op": "buff", "attack": 2, "health": 1 }, "rarity": "common" },
+    { "id": "bellows", "name": "Bellows", "type": "spell", "element": "neutral", "cost": 1, "effect": { "op": "energy", "amount": 2 }, "rarity": "rare" },
+    { "id": "eternal-forge", "name": "Eternal Forge", "type": "relic", "element": "neutral", "cost": 3, "effect": { "op": "energy", "amount": 1 }, "rarity": "epic" },
+    { "id": "cinder-totem", "name": "Cinder Totem", "type": "relic", "element": "fire", "cost": 2, "effect": { "op": "damage", "amount": 1 }, "rarity": "rare" },
+    { "id": "verdant-idol", "name": "Verdant Idol", "type": "relic", "element": "earth", "cost": 2, "effect": { "op": "heal", "amount": 2 }, "rarity": "rare" }
+  ],
+  "deck": {
+    "forge-apprentice": 2,
+    "ember-scout": 2,
+    "tide-warden": 2,
+    "gale-runner": 2,
+    "stone-sentinel": 2,
+    "storm-hawk": 1,
+    "anvil-golem": 2,
+    "ember-vanguard": 1,
+    "basalt-titan": 1,
+    "deepwater-leviathan": 1,
+    "spark": 2,
+    "quake": 1,
+    "tidal-mend": 1,
+    "tailwind": 1,
+    "tempering": 2,
+    "bellows": 1,
+    "eternal-forge": 1,
+    "cinder-totem": 1,
+    "verdant-idol": 1
+  }
+}

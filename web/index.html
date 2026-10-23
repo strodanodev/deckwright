@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deckwright · Web3 TCG game maker</title>
+<meta name="description" content="Deckwright: build a trading card game from an NFT collection. One JSON file is a game; on-chain ERC-6699 stats make the champions. Play the demo duel." />
+<meta name="theme-color" content="#0b0a09" />
+<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./app.css" />
+</head>
+<body>
+<header class="top">
+  <span class="brand">Deckwright</span>
+  <h1 id="game-title">Duel</h1>
+  <div class="top-right">
+    <span id="mode" class="pill">Practice</span>
+    <button id="wallet" class="ghost" type="button">Connect wallet</button>
+  </div>
+</header>
+
+<section id="pick" class="pick" aria-labelledby="pick-title">
+  <p class="kicker">Web3 TCG game maker · demo game</p>
+  <h2 id="pick-title">Choose your champion</h2>
+  <p class="lede">Every <b id="collection-name">collection</b> card can fight. A champion's on-chain stats shape your side: <b>resilience</b> sets life, <b>intelligence</b> spell power, <b>strength</b> unit attack, <b>agility</b> your opening hand. Cards your wallet holds are marked; in practice any champion may fight.</p>
+  <div class="pick-filter" role="group" aria-label="Show">
+    <button type="button" data-filter="all" aria-pressed="true">All</button>
+    <button type="button" data-filter="owned" aria-pressed="false">Held by me</button>
+  </div>
+  <div id="champions" class="champions"></div>
+</section>
+
+<section id="board" class="board" hidden aria-label="Duel board">
+  <div class="row foe-row">
+    <div class="hero" id="foe-hero"></div>
+    <div class="relics" id="foe-relics" aria-label="Opponent relics"></div>
+  </div>
+  <div class="lane foe-lane" id="foe-lane" aria-label="Opponent units"></div>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <div class="lane my-lane" id="my-lane" aria-label="Your units"></div>
+  <div class="row my-row">
+    <div class="hero" id="my-hero"></div>
+    <div class="relics" id="my-relics" aria-label="Your relics"></div>
+    <div class="controls">
+      <button id="end" class="forge" type="button">End turn</button>
+      <button id="concede" class="ghost" type="button">Concede</button>
+    </div>
+  </div>
+  <div class="hand" id="hand" aria-label="Your hand"></div>
+</section>
+
+<div id="result" class="result" hidden role="dialog" aria-modal="true" aria-labelledby="result-title">
+  <div class="result-card">
+    <h2 id="result-title"></h2>
+    <p id="result-sub"></p>
+    <div class="result-actions">
+      <button id="again" class="forge" type="button">Rematch</button>
+      <button id="change" class="ghost" type="button">New champion</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

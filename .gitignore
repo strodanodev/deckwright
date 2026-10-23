@@ -1,0 +1,7 @@
+node_modules/
+dist/
+rulesets/
+.vercel/
+DEPLOY.local.md
+*.log
+.DS_Store
