@@ -103,12 +103,14 @@ export interface RulesConfig {
   fatigue: boolean;
   /** The second player starts with this much extra energy. */
   secondPlayerEnergy: number;
+  /** The second player's opening hand holds this many extra cards (default 0): a finer lever than energy. */
+  secondPlayerCards?: number;
 }
 
 /**
  * 'declared': each player declares their own deck (for example the cards their wallet holds) as the first
  * entries of the match log, one card per entry, before turn 1. The log stays the whole truth, so any node
- * or witness replays it; ownership is checked by the client and relay, not by the rules.
+ * or witness replays it. Ownership is not a rule: the relay enforces it for owned-only matches (tools/chain-check.ts).
  */
 export interface DeckRules {
   mode: 'fixed' | 'declared';

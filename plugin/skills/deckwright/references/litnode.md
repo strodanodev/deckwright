@@ -50,11 +50,17 @@ A result is *official* only with both players' signatures plus at least one co-s
 - The queue carries one `tokenId` per player. The gauntlet passes each player's claim in `hydration.agents[p].tokenId`.
 - The node reads `coreStats` and `manifestOf` from `ERC6699Registry` at the placement's `beaconBlock`, and checks `mayPlay`: the player's PlayerProfile owner owns or controls the token.
 - Ranked play is "sterile": equipment is stripped.
+- **The relay does the same before the match starts**, so players see the stats the node will settle with:
+  - It reads `coreStats` from `TCG_STATS_CONTRACT` (default: the collection), ignoring any stats the client sends.
+  - In a placed match it requires the token's owner to be the wallet that PlayerProfile binds to the player key.
+  - A champion it can't verify is dropped: the player fights with the base champion (all stats 0), which is also what the node would settle with.
+  - Environment: `TCG_RPC` (default: the chain preset), `TCG_COLLECTION`, `TCG_STATS_CONTRACT`, `TCG_PLAYER_PROFILE` (default: Liteforge's `0xe2cf46ab11eAfB18c1933409E35ae68CEce88882`), and `TCG_CHAIN=off` to skip on-chain reads.
 - **Registry mismatch (blocking for Rapture cards in ranked):**
   - LitNode v0.11.26 reads `0x38DF2543e039E775D3f674f7414df43e4eF2f883`.
   - `RaptureCards` mirrors into `0xBeEe6cFAD12346124eb3d51b716fce00B7f11949`.
   - The registry twin id is `keccak(RaptureCards, tokenId)`, not the card's tokenId.
   - Until one side moves, a node needs `ERC6699=0xBeEe…` and the client must queue with the twin id.
+  - Set the relay's `TCG_STATS_CONTRACT` to the registry the node reads, so live and settled stats agree.
 
 ## Gaps and risks (v1)
 
@@ -67,5 +73,5 @@ A result is *official* only with both players' signatures plus at least one co-s
 - **Two players only.** Pairing, replay and intake are all hard-wired to 2.
 - **Beacon.** The seed comes from a blockhash the sequencer can grind. It is fine for casual play. For stakes, add drand (as PackShopV2 does) or commit-reveal.
 - **Cost.** Each match needs a 2 s bucket, a beacon block and a commit before play, about 445k gas for the host and about 75k per witness. Ranked needs at least 3 bonded witnesses, or matches are casual-only.
-- **The deck is the config's deck**, not the player's wallet. A deck of owned card NFTs needs either a deck registry that the node hydrates (a LitNode change), or casual-only fixture claims.
-- **The champion claim is unverified client-side.** Both clients render with the stats sent in `hello`. If a player lies, only that player's view diverges; the node's replay with registry stats decides the result.
+- **Deck ownership is enforced by the match server, not by settlement.** With `TCG_OWNED=1` (the default for ranked) the relay checks every declared collection card against the player's PlayerProfile wallet. Witnesses replay the log but can't read the chain, so a dishonest host could seat an unowned deck. Closing that needs a deck registry the node hydrates (a LitNode change).
+- **Champion stats come from the chain, not the client.** The relay reads them and ignores the claim in `hello`, so both clients render the stats the node settles with.

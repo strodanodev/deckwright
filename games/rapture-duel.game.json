@@ -2,7 +2,7 @@
   "title": "Rapture Duel",
   "description": "Card duel built from Rapture — ARC 1 (0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721 on chain 4441).",
   "litnode": {
-    "rulesetId": "rapture-duel.v2",
+    "rulesetId": "rapture-duel.v3",
     "tickRate": 4,
     "maxTicks": 600,
     "modes": [
@@ -77,7 +77,8 @@
     "energyPerTurn": 1,
     "elementBonus": 1,
     "fatigue": true,
-    "secondPlayerEnergy": 1
+    "secondPlayerEnergy": 1,
+    "secondPlayerCards": 2
   },
   "cards": [
     {
@@ -1040,7 +1041,7 @@
   },
   "deckRules": {
     "mode": "declared",
-    "size": 30,
+    "size": 36,
     "maxCopies": 2
   }
 }

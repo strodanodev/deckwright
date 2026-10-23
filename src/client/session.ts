@@ -1,5 +1,6 @@
 import { concede, declare } from '../core/actions';
 import { greedyBot } from '../core/bot';
+import { normalizeStats } from '../core/champion';
 import type { Rules } from '../core/rules';
 import type { AgentStats, MatchState } from '../core/types';
 import { type CabinetShell, connectShell, parseLaunch } from './shell';
@@ -15,8 +16,10 @@ export interface MatchSession {
   readonly state: MatchState | null;
   /** Status line for the HUD: waiting, signing, settled, errors. */
   readonly status: string;
-  /** Champion each player brought, when known (relay sessions learn them at start). */
+  /** Champion each player brought, when known (relay sessions learn them at start, with the stats read on chain). */
   readonly champions: Record<string, Champion | undefined>;
+  /** Owned-only match: the server accepts only collection cards the player's wallet holds (support cards are free). */
+  readonly ownedOnly: boolean;
   onChange(cb: () => void): void;
   act(x: number): void;
   /** Declared-deck games: declare this deck (card indices). Sessions without a deck phase ignore it. */
@@ -33,6 +36,7 @@ abstract class BaseSession implements MatchSession {
   public state: MatchState | null = null;
   public status = 'connecting…';
   public champions: Record<string, Champion | undefined> = {};
+  public ownedOnly = false;
   protected readonly listeners: Array<() => void> = [];
   protected participants: string[] = [];
   protected readonly entries: Entry[] = [];
@@ -42,9 +46,9 @@ abstract class BaseSession implements MatchSession {
   public onChange(cb: () => void): void { this.listeners.push(cb); }
   protected changed(status?: string): void { if (status !== undefined) this.status = status; for (const cb of this.listeners) cb(); }
 
-  protected begin(seed: string, participants: string[], stats: Record<string, AgentStats>): void {
+  protected begin(seed: string, participants: string[], stats: Record<string, AgentStats | undefined>): void {
     this.participants = participants;
-    this.state = this.rules.init(seed, participants, { agents: Object.fromEntries(participants.map((p) => [p, { stats: stats[p] ?? {} }])) });
+    this.state = this.rules.init(seed, participants, { agents: Object.fromEntries(participants.map((p) => [p, { stats: normalizeStats(stats[p]) }])) });
   }
 
   protected apply(entry: Entry): void {
@@ -64,7 +68,8 @@ export class LocalBotSession extends BaseSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly bot: (s: MatchState, side?: 0 | 1) => number;
 
-  constructor(rules: Rules, seed = `${Date.now()}`, stats: AgentStats = {}, botStats: AgentStats = {}) {
+  /** `stats` / `botStats`: each side's champion; omitted means no champion (every stat 0, as LitNode hydrates it). */
+  constructor(rules: Rules, seed = `${Date.now()}`, stats?: AgentStats, botStats?: AgentStats) {
     super(rules, 'you');
     this.bot = greedyBot(rules);
     this.begin(seed, ['you', 'bot'], { you: stats, bot: botStats });
@@ -118,10 +123,13 @@ export class RelaySession extends BaseSession {
 
   private constructor(rules: Rules, you: string, private readonly shell: CabinetShell | null) { super(rules, you); }
 
-  /** Dev relay (TCG_DEV=1): no LitNode, players name themselves. */
-  public static dev(rules: Rules, url: string, player: string, champion?: Champion): RelaySession {
+  /**
+   * Dev relay (TCG_DEV=1): no LitNode, players name themselves. Only the champion's token id is used: the
+   * server reads its stats on chain. `wallet` (unproven in dev) is what an owned-only dev match checks.
+   */
+  public static dev(rules: Rules, url: string, player: string, champion?: Champion, wallet?: string): RelaySession {
     const s = new RelaySession(rules, player, null);
-    s.open(url, { t: 'hello', player, champion });
+    s.open(url, { t: 'hello', player, champion: champion ? { tokenId: champion.tokenId } : undefined, wallet });
     return s;
   }
 
@@ -140,7 +148,8 @@ export class RelaySession extends BaseSession {
     const sig = await shell.signSeat(first.challenge);
     const seat = await fetch(`${base}&nonce=${first.challenge.nonce}&sig=${sig}`).then((r) => r.json()) as { ticket?: string; ws?: string; error?: string };
     if (!seat.ticket || !seat.ws) throw new Error(seat.error ?? 'seat: no ticket');
-    s.open(seat.ws, { t: 'hello', ticket: seat.ticket, champion });
+    // The server proves the wallet from the player key's on-chain profile and reads the champion's stats itself.
+    s.open(seat.ws, { t: 'hello', ticket: seat.ticket, champion: champion ? { tokenId: champion.tokenId } : undefined });
     return s;
   }
 
@@ -163,7 +172,8 @@ export class RelaySession extends BaseSession {
         const champions = (m.champions ?? {}) as Record<string, { tokenId?: string | null; stats?: AgentStats }>;
         const participants = m.participants as string[];
         this.champions = Object.fromEntries(participants.map((p) => [p, champions[p]?.tokenId ? { tokenId: String(champions[p].tokenId), stats: champions[p].stats ?? {} } : undefined]));
-        this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, champions[p]?.stats ?? {}])));
+        this.ownedOnly = m.ownedOnly === true;
+        this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, champions[p]?.stats])));
         for (const e of (m.entries as Entry[]) ?? []) this.apply(e);
         this.changed('live');
         if (this.pendingDeck) { const d = this.pendingDeck; this.pendingDeck = null; this.declareDeck(d); }
@@ -175,6 +185,9 @@ export class RelaySession extends BaseSession {
         break;
       case 'reject':
         this.changed(`rejected: ${String(m.reason)}`);
+        break;
+      case 'notice':
+        this.changed(String(m.message));
         break;
       case 'sign': {
         // Sign the log THIS client recorded; the arcade recomputes the head from it.

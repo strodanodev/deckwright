@@ -11,7 +11,16 @@
  * Zero dependencies (a minimal RFC 6455 text-frame server), so a node operator needs only this
  * checkout and Node. Gauntlet config: see templates/gauntlet.json.
  *
- * Dev mode (TCG_DEV=1, no LitNode): no tickets, players name themselves in `hello`, no ledger post.
+ * Champions: the server reads each champion's ERC-6699 stats from the chain (tools/chain-check.ts) and ignores
+ * the stats a client claims, so the match players see is the match LitNode settles. In a placed match the
+ * champion must also belong to the player's wallet (LitNode PlayerProfile binding), as LitNode's `mayPlay` requires.
+ *
+ * Owned-only decks (TCG_OWNED=1; the default for ranked): every declared collection card must be held by the
+ * player's wallet; support cards (no token) are always allowed. LitNode's replay cannot read the chain, so this
+ * server is the only place deck ownership is enforced.
+ *
+ * Dev mode (TCG_DEV=1, no LitNode): no tickets, players name themselves in `hello` and may name a `wallet`
+ * (unproven), no ledger post. Champion stats still come from the chain unless TCG_CHAIN=off.
  *   TCG_DEV=1 TCG_GAME=games/my-duel.game.json deckwright relay
  */
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -19,10 +28,12 @@ import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 
-import { concede, decode, endTurn, Op } from '../core/actions';
+import { concede, declaredCard, decode, endTurn, Op } from '../core/actions';
+import { NO_CHAMPION } from '../core/champion';
 import { compileGame } from '../core/game';
 import { createRules } from '../core/rules';
 import type { AgentStats, GameConfig, MatchState } from '../core/types';
+import { chainCheckFromEnv } from './chain-check';
 
 const env = process.env;
 const DEV = env.TCG_DEV === '1';
@@ -41,6 +52,10 @@ const DISCONNECT_MS = Number(env.TCG_DISCONNECT_MS ?? 30_000);
 const SIGN_MS = Number(env.TCG_SIGN_MS ?? 60_000);
 const seats: Array<{ sub: string }> = env.GAUNTLET_SEATS ? JSON.parse(env.GAUNTLET_SEATS) : [];
 if (!DEV && (!SECRET || seats.length !== 2 || !MATCH_ID)) throw new Error('gauntlet env missing: GAUNTLET_SECRET, GAUNTLET_SEATS (2 seats), GAUNTLET_MATCH_ID');
+const chain = chainCheckFromEnv(game, env);
+const DECLARED = game.deckRules?.mode === 'declared';
+const OWNED = DECLARED && (env.TCG_OWNED !== undefined ? env.TCG_OWNED === '1' : MODE === 'ranked');
+if (OWNED && !chain) throw new Error('owned-only decks need on-chain checks: this game has no collection, or TCG_CHAIN=off');
 
 const log = (msg: string): void => console.log(`[tcg ${MATCH_ID.slice(0, 8)}] ${msg}`);
 
@@ -110,12 +125,18 @@ interface Seat {
   peer: Peer | null;
   tokenId: string | null;
   stats: AgentStats;
+  /** The wallet behind this player: their PlayerProfile binding (placed) or their claim (dev). */
+  wallet: string | null;
+  /** Owned-only matches: the collection tokens the wallet holds. */
+  held: Set<string>;
+  /** Champion and holdings lookups; the match starts once both seats' have settled. */
+  ready: Promise<void> | null;
   sig: string | null;
   goneAt: number | null;
 }
 
-const ZERO: AgentStats = { strength: 0, agility: 0, resilience: 0, intelligence: 0 }; // what LitNode hydrates for an `external` agent
-const table: Seat[] = (DEV ? [] : seats.map((s) => s.sub)).map((id) => ({ id, peer: null, tokenId: null, stats: ZERO, sig: null, goneAt: null }));
+const newSeat = (id: string): Seat => ({ id, peer: null, tokenId: null, stats: NO_CHAMPION, wallet: null, held: new Set(), ready: null, sig: null, goneAt: null });
+const table: Seat[] = (DEV ? [] : seats.map((s) => s.sub)).map(newSeat);
 const entries: Array<{ k: number; inputs: [number, number] }> = [];
 let state: MatchState | null = null;
 let turnTimer: ReturnType<typeof setTimeout> | null = null;
@@ -123,7 +144,7 @@ let ended = false;
 
 const broadcast = (msg: unknown): void => { for (const s of table) s.peer?.send(msg); };
 const ctx = (): { agents: Record<string, { stats: AgentStats }> } => ({ agents: Object.fromEntries(table.map((s) => [s.id, { stats: s.stats }])) });
-const startMsg = (): unknown => ({ t: 'start', matchId: MATCH_ID, rulesetId: game.litnode.rulesetId, buildHash: BUILD, seed: SEED, participants: table.map((s) => s.id), champions: Object.fromEntries(table.map((s) => [s.id, { tokenId: s.tokenId, stats: s.stats }])), entries });
+const startMsg = (): unknown => ({ t: 'start', matchId: MATCH_ID, rulesetId: game.litnode.rulesetId, buildHash: BUILD, seed: SEED, participants: table.map((s) => s.id), champions: Object.fromEntries(table.map((s) => [s.id, { tokenId: s.tokenId, stats: s.stats }])), ownedOnly: OWNED, entries });
 
 function record(side: 0 | 1, x: number): void {
   if (!state || state.over) return;
@@ -144,17 +165,65 @@ function armTurnClock(): void {
   const side = state.turn;
   // An idle player's turn ends for them; the entry carries their END, and both players sign the log.
   if (state.phase === 'decks') {
-    // A player who has not finished declaring by the deadline plays the rest of the suggested deck.
+    // A player who has not finished declaring by the deadline plays the rest of the suggested deck (only cards
+    // they may declare); one who cannot complete a legal deck concedes.
     turnTimer = setTimeout(() => {
-      for (const s of [0, 1] as const) for (let x = rules.suggestedDeclaration(state!, s); x && state?.phase === 'decks'; x = rules.suggestedDeclaration(state!, s)) record(s, x);
+      for (const s of [0, 1] as const) {
+        while (state?.phase === 'decks' && state.decl![s].length < (game.deckRules?.size ?? 0)) {
+          const suggested = rules.suggestedDeclaration(state, s);
+          const x = suggested && mayDeclare(table[s], suggested) ? suggested : rules.legalActions(state, s).find((d) => mayDeclare(table[s], d));
+          if (!x) { record(s, concede()); break; }
+          record(s, x);
+        }
+      }
     }, DECK_MS);
     return;
   }
   turnTimer = setTimeout(() => record(side, endTurn()), TURN_MS);
 }
 
-function maybeStart(): void {
-  if (state || table.length !== 2 || table.some((s) => !s.peer)) return;
+/** A collection card's token, or null for a support card. */
+const tokenOfCard = (c: number): string | null => { const t = game.cards[c]?.token; return t ? String(t.tokenId) : null; };
+const mayDeclare = (seat: Seat, x: number): boolean => { if (!OWNED) return true; const t = tokenOfCard(declaredCard(x)); return !t || seat.held.has(t); };
+
+/**
+ * Look up what this seat brings, on chain: the wallet, the champion's stats (never the client's claim) and, for
+ * owned-only matches, the wallet's holdings. A champion that cannot be verified is dropped, so the player plays
+ * with the base champion, which is what LitNode would settle with anyway.
+ */
+async function verifySeat(seat: Seat, claim: { tokenId?: unknown } | undefined, walletClaim: unknown): Promise<void> {
+  const tokenId = claim?.tokenId != null ? String(claim.tokenId) : null;
+  const tell = (message: string): void => { seat.peer?.send({ t: 'notice', message }); log(`${seat.id.slice(0, 8)}: ${message}`); };
+  try {
+    if (chain && !DEV) seat.wallet = await chain.walletOf(seat.id);
+    else if (DEV && typeof walletClaim === 'string' && /^0x[0-9a-fA-F]{40}$/.test(walletClaim)) seat.wallet = walletClaim.toLowerCase();
+    if (tokenId && !chain) {
+      // Nothing to read the champion from: casual LitNode settles such a claim with zero stats, so play with them too.
+      seat.tokenId = tokenId; seat.stats = NO_CHAMPION;
+    } else if (tokenId && chain) {
+      const [stats, owner] = await Promise.all([chain.championStats(tokenId), DEV ? Promise.resolve(null) : chain.ownerOf(tokenId)]);
+      if (!stats) tell(`champion ${tokenId} has no ERC-6699 stats on chain; playing with the base champion`);
+      else if (!DEV && (!seat.wallet || owner !== seat.wallet)) tell(`champion ${tokenId} is not held by this player's wallet; playing with the base champion`);
+      else { seat.tokenId = tokenId; seat.stats = stats; }
+    }
+    if (OWNED && chain) {
+      const ids = [...new Set(game.cards.map((_, c) => tokenOfCard(c)).filter((t): t is string => !!t))];
+      seat.held = seat.wallet ? await chain.holdings(seat.wallet, ids) : new Set();
+      if (!seat.wallet) tell('owned-only match: no wallet is bound to this player, so only support cards can be declared');
+    }
+  } catch (e) {
+    tell(`chain lookup failed (${(e as Error).message}); playing with the base champion`);
+    seat.tokenId = null; seat.stats = NO_CHAMPION;
+  }
+}
+
+let starting = false;
+async function maybeStart(): Promise<void> {
+  if (state || starting || table.length !== 2 || table.some((s) => !s.peer)) return;
+  starting = true;
+  await Promise.all(table.map((s) => s.ready));
+  starting = false;
+  if (state || table.some((s) => !s.peer)) return;
   state = rules.init(SEED, table.map((s) => s.id), ctx());
   log(`start: ${table.map((s) => s.id.slice(0, 8)).join(' vs ')}`);
   broadcast(startMsg());
@@ -184,20 +253,20 @@ async function finish(): Promise<void> {
 }
 
 function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) => void): void {
-  let m: { t?: string; ticket?: string; player?: string; champion?: { tokenId?: string; stats?: AgentStats }; x?: number; sig?: string };
+  let m: { t?: string; ticket?: string; player?: string; wallet?: string; champion?: { tokenId?: string }; x?: number; sig?: string };
   try { m = JSON.parse(raw); } catch { return; }
   if (m.t === 'hello') {
     const id = DEV ? String(m.player ?? '') : verifyTicket(m.ticket)?.sub;
     let s = table.find((x) => x.id === id);
-    if (!s && DEV && id && table.length < 2 && !state) { s = { id, peer: null, tokenId: null, stats: ZERO, sig: null, goneAt: null }; table.push(s); }
+    if (!s && DEV && id && table.length < 2 && !state) { s = newSeat(id); table.push(s); }
     if (!id || !s) { peer.send({ t: 'error', message: 'not a seat in this match' }); peer.close(); return; }
     s.peer?.close();
     s.peer = peer; s.goneAt = null;
-    // The node re-reads the champion from the registry at settlement; this claim only lets both clients render the same start.
-    if (!state && m.champion?.tokenId) { s.tokenId = String(m.champion.tokenId); s.stats = m.champion.stats ?? ZERO; }
+    // Only the champion's token id is taken from the client; its stats come from the chain (verifySeat).
+    if (!state && !s.ready) s.ready = verifySeat(s, m.champion, m.wallet);
     bind(s);
     peer.send({ t: 'seated', you: s.id, waiting: table.filter((x) => !x.peer).length + (2 - table.length) });
-    if (state) peer.send(startMsg()); else maybeStart();
+    if (state) peer.send(startMsg()); else void maybeStart();
     return;
   }
   if (!seat || !state) return;
@@ -206,7 +275,8 @@ function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) =
     const x = (m.x as number) | 0;
     const op = decode(x).op;
     // isLegal with a side: declarations from either side in the deck phase, the side to act afterwards.
-    if (op === Op.Concede || rules.isLegal(state, x, side)) record(side, op === Op.Concede ? concede() : x);
+    if (op === Op.Declare && rules.isLegal(state, x, side) && !mayDeclare(seat, x)) peer.send({ t: 'reject', x, reason: 'not in your wallet' });
+    else if (op === Op.Concede || rules.isLegal(state, x, side)) record(side, op === Op.Concede ? concede() : x);
     else peer.send({ t: 'reject', x, reason: state.turn === side ? 'illegal' : 'not your turn' });
   } else if (m.t === 'sig' && typeof m.sig === 'string' && /^[0-9a-f]{128}$/.test(m.sig)) {
     seat.sig = m.sig;

@@ -13,7 +13,7 @@
  * The collection is a `deckwright snapshot` file (or the Rapture snapshot shape). Each card's `art` is
  * found next to the snapshot first, then under `--art-root` (default: two folders above the snapshot,
  * as in <site>/assets/<collection>/cards.json). Without --collection the site still works: players
- * fight with a neutral champion.
+ * fight with the base champion (every stat 0).
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';

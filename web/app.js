@@ -3,7 +3,7 @@
 // ruleset run, so a match replays identically everywhere. Practice is against the house bot;
 // ?relay=ws://127.0.0.1:7830&name=alice joins a dev relay (`TCG_DEV=1 pnpm relay`).
 // Every name on the page goes in through textContent.
-import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn } from "./engine/deckwright.js";
+import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore } from "./engine/deckwright.js";
 import { createWallet } from "./lib/wallet.js";
 import { createHoldings } from "./lib/holdings.js";
 import { shortAddress } from "./lib/util.js";
@@ -15,8 +15,9 @@ const RELAY = q.get("relay");
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; };
-// ERC-6699 CoreStats as the collection snapshot stores them; a card without stats fights with neutral ones.
-const toStats = (s) => (s ? { strength: s.str, agility: s.agi, resilience: s.res, intelligence: s.int } : {});
+// ERC-6699 CoreStats as the collection snapshot stores them, normalized the way LitNode hydrates them: a card
+// without stats, or no champion at all, fights with every stat at 0 (the base champion).
+const toStats = statsFromCore;
 const elementOf = (name) => String(name ?? "neutral").toLowerCase();
 const randomSeed = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -35,12 +36,12 @@ const artOf = (def) => (def.token ? byToken.get(String(def.token.tokenId))?.art 
 
 // ------------------------------------------------------------------ wallet (optional: marks the champions you hold)
 const wallet = createWallet();
-// A game built without a collection has no contract to read: no wallet marking, neutral champions only.
+// A game built without a collection has no contract to read: no wallet marking, base champions only.
 const holdings = /^0x[0-9a-fA-F]{40}$/.test(snap.collection.address ?? "") ? createHoldings({ collection: { ...snap.collection, cards: snap.cards } }) : null;
 if (!holdings) { $("wallet").hidden = true; document.querySelector(".pick-filter").hidden = true; }
 if (!snap.cards.length) {
   $("pick-title").textContent = "Ready to duel";
-  document.querySelector("#pick .lede").textContent = "This game has no NFT collection yet, so both sides fight with neutral champions. Add one with `deckwright snapshot` and `deckwright import`, and each card's on-chain stats will shape its champion.";
+  document.querySelector("#pick .lede").textContent = "This game has no NFT collection yet, so both sides fight with the base champion. Add one with `deckwright snapshot` and `deckwright import`, and each card's on-chain stats will shape its champion.";
 }
 let owned = new Set();
 let filter = "all";
@@ -74,7 +75,7 @@ function renderChampions() {
   grid.replaceChildren();
   const list = snap.cards.filter((c) => filter === "all" || owned.has(String(c.tokenId)));
   if (!snap.cards.length) {
-    const b = el("button", "forge", "Play with a neutral champion");
+    const b = el("button", "forge", "Play with the base champion");
     b.type = "button";
     b.addEventListener("click", () => start(null));
     grid.append(b);
@@ -113,8 +114,8 @@ let session = null, mine = null, foeChamp = null, pick = null, prev = null, rece
 // ------------------------------------------------------------------ wallet decks (deckRules.mode "declared")
 // Each player declares their own deck; the declarations open the match log, so the match replays anywhere.
 // Any card may be played by default (practice and casual). "Wallet deck" builds from the cards you hold. With
-// &owned=1 a two-player match accepts only held collection cards (support cards are always free); ranked play
-// will need the same check server-side, at match start.
+// &owned=1 the builder offers only held collection cards (support cards are always free). The relay enforces it
+// (TCG_OWNED=1, the default for ranked): it reads the wallet's holdings on chain and rejects anything else.
 const DECK = game.deckRules?.mode === "declared" ? game.deckRules : null;
 const tokenOf = (def) => (def.token ? String(def.token.tokenId) : null);
 const deckKey = `deckwright.deck.${game.litnode.rulesetId}`;
@@ -193,8 +194,8 @@ function beginMatch(champion, declaredDeck) {
   foeChamp = RELAY || !others.length ? null : others[Math.floor(Math.random() * others.length)];
   const claim = champion ? { tokenId: String(champion.tokenId), stats: toStats(champion.stats) } : undefined;
   session = RELAY
-    ? RelaySession.dev(rules, RELAY, q.get("name") ?? `player-${randomSeed().slice(0, 6)}`, claim)
-    : new LocalBotSession(rules, randomSeed(), claim?.stats ?? {}, toStats(foeChamp?.stats));
+    ? RelaySession.dev(rules, RELAY, q.get("name") ?? `player-${randomSeed().slice(0, 6)}`, claim, wallet.snapshot().address ?? undefined)
+    : new LocalBotSession(rules, randomSeed(), claim?.stats, toStats(foeChamp?.stats));
   $("mode").textContent = RELAY ? "Dev relay" : "Practice vs bot";
   pick = null; prev = null; recent = [];
   session.onChange(render);

@@ -3,7 +3,7 @@
 Numbers that produce a playable, balanced Deckwright set on the first pass. They're calibrated against the
 default rules:
 - energy starts at 1, grows by 1 per turn and caps at 10;
-- the second player gets +1 energy on their first turn;
+- the second player gets +1 energy on their first turn, and +1 card in their opening hand (`secondPlayerCards`);
 - the board holds 5 units and the hand holds 8.
 
 Run `deckwright sim` and adjust from there.

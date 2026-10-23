@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { attack, compileGame, concede, createRules, declare, decode, endTurn, greedyBot, Op, play, validateGame } from '../src/core/index';
+import { attack, compileGame, concede, createRules, declare, decode, endTurn, greedyBot, NO_CHAMPION, normalizeStats, Op, play, validateGame } from '../src/core/index';
+import { LocalBotSession } from '../src/client/session';
 import type { GameConfig, MatchState } from '../src/core/index';
 
 const load = (p: string): GameConfig => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8')) as GameConfig;
@@ -108,4 +109,29 @@ test('declared decks: each side declares its own cards, shuffled from the seed, 
 test('declared decks: validation needs a default deck large enough to suggest from', () => {
   const errs = validateGame({ ...STARTER, deckRules: { mode: 'declared', size: 60, maxCopies: 2 } });
   assert.ok(errs.some((e) => e.includes('deckRules.size')));
+});
+
+test('one champion hydration everywhere: none or missing stats are 0, as LitNode hydrates an external agent', () => {
+  const rules = createRules(compileGame(STARTER));
+  assert.deepEqual(normalizeStats(undefined), NO_CHAMPION);
+  assert.deepEqual(normalizeStats({ strength: 70000, agility: -5, resilience: 12.6 }), { strength: 65535, agility: 0, resilience: 13, intelligence: 0 });
+  assert.deepEqual(rules.champion(), rules.champion(NO_CHAMPION));
+  assert.deepEqual(rules.champion({}), rules.champion(NO_CHAMPION));
+  assert.equal(rules.champion().life, STARTER.champion.life.min);
+  // Practice, the relay's start and the ruleset under LitNode all build the same opening state.
+  const practice = new LocalBotSession(rules, 'seed-1');
+  practice.close();
+  const placed = rules.init('seed-1', ['you', 'bot'], { agents: { you: { stats: NO_CHAMPION }, bot: { stats: NO_CHAMPION } } });
+  assert.deepEqual(practice.state, placed);
+  assert.deepEqual(rules.init('seed-1', ['you', 'bot'], {}), placed);
+});
+
+test('secondPlayerCards: the second player opens with extra cards', () => {
+  const base = createRules(compileGame({ ...STARTER, rules: { ...STARTER.rules, secondPlayerCards: 0 } }));
+  const extra = createRules(compileGame({ ...STARTER, rules: { ...STARTER.rules, secondPlayerCards: 2 } }));
+  const a = base.init('seed-2', ['a', 'b'], {}), b = extra.init('seed-2', ['a', 'b'], {});
+  const second = a.turn === 0 ? 1 : 0;
+  assert.equal(b.p[second].hand.length, a.p[second].hand.length + 2);
+  assert.equal(b.p[a.turn].hand.length, a.p[a.turn].hand.length);
+  assert.ok(validateGame({ ...STARTER, rules: { ...STARTER.rules, secondPlayerCards: 9 } }).some((e) => e.includes('secondPlayerCards')));
 });

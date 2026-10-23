@@ -46,7 +46,7 @@ The new project contains:
 
 ### Bring an NFT collection
 
-Any ERC-721 works. ERC-6699 CoreStats make each card's champion; without them, champions are neutral.
+Any ERC-721 works. ERC-6699 CoreStats make each card's champion; without them, every champion fights with base stats (all 0).
 
 ```bash
 npx deckwright snapshot <collection address> --chain liteforge --out collection    # or --rpc <url> [--explorer <blockscout url>]
@@ -73,11 +73,11 @@ What `import` does:
 | `deckwright new <id>` | Add a game config from the template |
 | `deckwright snapshot <address>` | Read an NFT collection (and its ERC-6699 stats) from chain |
 | `deckwright import <cards.json> --id <id>` | Turn a collection into a card set |
-| `deckwright sim <game.json>` | Bot vs bot: balance numbers and a replay determinism check |
+| `deckwright sim <game.json> [--decks random]` | Bot vs bot: balance numbers and a replay determinism check. `--decks random` balances wallet decks and rates every card |
 | `deckwright title <game.json> [--litnode <dir>]` | Build the LitNode ruleset; run the built-in (or LitNode's real) conformance checks |
 | `deckwright web <game.json> [--collection <cards.json>]` | Build the static site's engine, data and art |
 | `deckwright dev` | Serve the site locally, with production headers |
-| `TCG_DEV=1 TCG_GAME=<game.json> deckwright relay` | Two-player relay. Open the site twice with `?relay=ws://127.0.0.1:7830&name=alice` and `&name=bob` |
+| `TCG_DEV=1 TCG_GAME=<game.json> deckwright relay` | Two-player relay. Open the site twice with `?relay=ws://127.0.0.1:7830&name=alice` and `&name=bob`. It reads champion stats from the chain (`TCG_CHAIN=off` to skip); `TCG_OWNED=1` enforces owned-only decks |
 
 ## How a match works
 
@@ -99,8 +99,9 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 **Wallet decks** (`deckRules.mode: "declared"`): each player builds a deck, for example from the cards their wallet holds.
 - The deck is declared card by card at the start of the match log, so any node replays it.
 - Decks are shuffled from the match seed.
-- The demo does this with 30-card decks.
-- Ownership is checked by the client, and owned-only matches can be enforced with `&owned=1`. Ranked play will need a server-side check at match start.
+- The demo does this with 36-card decks.
+- Owned-only matches (`TCG_OWNED=1`, the default for ranked) are enforced by the relay: it reads the wallet's holdings on chain and rejects any other collection card. The rules themselves accept any card, so casual play is open.
+- The relay also reads each champion's stats on chain and ignores what the client claims. A player with no champion fights with base stats (all 0), as LitNode hydrates them.
 
 **Not in v1:**
 - hidden hands (the duel is open-information);
@@ -112,7 +113,7 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 pnpm install          # also builds dist/ (the CLI)
 pnpm deckwright <cmd> # run any command from source (tsx)
 pnpm dev              # the demo site at http://127.0.0.1:4173
-pnpm test             # rules, ruleset compatibility, EVM decoding, CLI, site bundle
+pnpm test             # rules, ruleset compatibility, EVM decoding, chain checks, relay, CLI, site bundle
 pnpm typecheck
 ```
 

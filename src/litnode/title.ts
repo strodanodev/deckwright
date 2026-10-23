@@ -26,7 +26,7 @@ export function defineTcgTitle(config: GameConfig) {
       maxTicks: ln.maxTicks,
       modes: ln.modes,
       participants: 2,
-      inputSchema: 'tcg-action:op3,a4,target4',
+      inputSchema: 'tcg-action:op3,a4,target4|declare:op3,card15',
       // Open information: both clients and the public ledger can see decks and hands.
       hiddenInfo: false,
       replicas: 3,

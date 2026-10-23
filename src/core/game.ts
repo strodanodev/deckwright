@@ -59,6 +59,7 @@ export function validateGame(cfg: GameConfig): string[] {
   need(isInt(r.energyStart, 0, 99) && isInt(r.energyMax, 1, 99) && isInt(r.energyPerTurn, 0, 99), 'rules.energyStart/energyMax/energyPerTurn must be small integers');
   need(isInt(r.elementBonus, 0, 99), 'rules.elementBonus must be an integer 0-99');
   need(isInt(r.secondPlayerEnergy, 0, 99), 'rules.secondPlayerEnergy must be an integer 0-99');
+  need(r.secondPlayerCards === undefined || isInt(r.secondPlayerCards, 0, 5), 'rules.secondPlayerCards must be an integer 0-5');
   need(typeof r.fatigue === 'boolean', 'rules.fatigue must be true or false');
 
   const ids = new Set<string>();

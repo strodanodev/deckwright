@@ -11,7 +11,15 @@ export const SEL = {
   tokenURI: '0xc87b56dd',
   ownerOf: '0x6352211e',
   coreStats: '0x09b97a4c', // ERC-6699 coreStats(uint256) -> (uint16 str, uint16 agi, uint16 res, uint16 int, uint32 level, uint64 xp)
+  ownerOfKey: '0x1ef9fc77', // LitNode PlayerProfile ownerOfKey(bytes32) -> (address owner, uint256 profileId, bool active)
 } as const;
+
+/** Known chains, so a builder can write `--chain liteforge` instead of URLs and addresses. */
+export const CHAINS: Record<string, { chainId: number; rpc: string; explorer: string; playerProfile?: string }> = {
+  // PlayerProfile: LitNode v0.11.26 contracts/deployed.testnet.json.
+  liteforge: { chainId: 4441, rpc: 'https://liteforge.rpc.caldera.xyz/http', explorer: 'https://liteforge.explorer.caldera.xyz', playerProfile: '0xe2cf46ab11eAfB18c1933409E35ae68CEce88882' },
+};
+export const chainById = (chainId: number): (typeof CHAINS)[string] | null => Object.values(CHAINS).find((c) => c.chainId === chainId) ?? null;
 /** keccak256("Transfer(address,address,uint256)") */
 export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 export const ZERO_TOPIC = `0x${'0'.repeat(64)}`;

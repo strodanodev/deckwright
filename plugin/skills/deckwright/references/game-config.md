@@ -31,14 +31,15 @@ The types are defined in `src/core/types.ts` and validated by `validateGame()` i
 3. Everything is in the input log, so a LitNode node replays it with no extra data.
 
 **Who may play which card**
-- **Ownership** is checked by the client, and the relay can check it too; the rules don't. Casual play accepts any card.
-- **Owned-only test:** add `&owned=1` to the site URL to try owned-only two-player matches.
-- **Ranked play** needs a server-side ownership check at match start.
+- **Ownership is not a rule:** LitNode's replay can't read the chain, so the match server enforces it. Casual play accepts any card.
+- **Owned-only matches** (`TCG_OWNED=1` on the relay; the default for ranked): before the match starts, the relay reads which collection cards the player's wallet holds. It then rejects any declared collection card the wallet lacks. Support cards (no `token`) are always allowed. In a placed match the wallet is the one LitNode's PlayerProfile binds to the player key, so nobody signs anything extra.
+- **Deadline:** a player who hasn't finished declaring gets the rest of the suggested deck, from cards they may declare. A player who can't complete a legal deck concedes.
+- **Local test:** run the dev relay with `TCG_OWNED=1`, open the site with `&owned=1` and connect a wallet. A dev relay trusts the wallet the page names.
 
 **Helpers**
 - `rules.suggestedDeclaration(state, side)` fills a deck from the suggestion. Bots use it, and so does the relay when a player hasn't declared by its deadline (`TCG_DECK_MS`, default 90 s).
 
-Balance tip: smaller decks raise the first-player advantage. Rapture Duel uses 30 cards, which gives about 56% first-player wins with `secondPlayerEnergy: 1`.
+Balance tip: smaller decks raise the first-player advantage, and random wallet decks can favour the first player more than the suggested deck does. Check both with `deckwright sim --decks suggested` and `--decks random`. Rapture Duel uses 36 cards with `secondPlayerEnergy: 1` and `secondPlayerCards: 2`, which gives about 52–53% first-player wins either way.
 
 ## `litnode`
 
@@ -59,6 +60,8 @@ Each entry is `{ stat, min, max }`.
 
 Keep the ranges narrow: the spread is how much NFT stats matter.
 
+A player with no champion, and any stat a champion lacks, counts as 0, so they get each range's `min`. That is what LitNode hydrates for a player without a registry champion, and practice, the relay, the sim and the ruleset all use the same `normalizeStats`.
+
 | Key | Effect |
 |---|---|
 | `life` | Starting and maximum life |
@@ -74,7 +77,8 @@ Keep the ranges narrow: the spread is how much NFT stats matter.
 | `relicSlots` | 0–5 |
 | `handLimit` | 1–16; when the hand is full, a drawn card is burned |
 | `energyStart`, `energyMax`, `energyPerTurn` | Energy cap grows each turn and refills |
-| `secondPlayerEnergy` | Bonus energy on the second player's first turn |
+| `secondPlayerEnergy` | Bonus energy on the second player's first turn. A coarse lever: each point moves first-player wins by about 10–20 points |
+| `secondPlayerCards` | Optional, 0–5 (default 0). Extra cards in the second player's opening hand. A finer lever: each card moves first-player wins by about 3–8 points |
 | `elementBonus` | Extra damage when the attacker's element `beats` the defender's (unit vs unit, and damage spells vs units) |
 | `fatigue` | Drawing from an empty deck deals 1, then 2, then 3… |
 

@@ -68,7 +68,7 @@ Iterate until the sim meets these targets. Each pass is a JSON edit plus a re-ru
 | Output | Target | If not |
 |---|---|---|
 | `replay mismatches` | **0** (required) | Something non-deterministic was added: undo it |
-| `first player wins` | 45–55% | Above 55%: raise `rules.secondPlayerEnergy` by 1, or make the deck larger. Below 45%: lower it |
+| `first player wins` | 45–55% | Above 55%: raise `rules.secondPlayerCards` by 1 (fine) or `rules.secondPlayerEnergy` by 1 (coarse), or make the deck larger. Below 45%: lower them |
 | `hit maxTicks` | about 0% | Add damage at higher costs, or raise `litnode.maxTicks` |
 | `avg turns` | 8–16 | Too short: more health and cheaper healing. Too long: more attack and fewer `guard` |
 | `never played` | few cards | Cheapen or strengthen them, or cut them |
@@ -84,7 +84,8 @@ npx deckwright import collection/cards.json --id <game-id> --out games
 
 - **`snapshot`:** for chains other than Liteforge, use `--rpc <url>` and, if the chain has a Blockscout explorer, `--explorer <url>`. It downloads the art.
 - **`import`:** rewrites `games/<id>.game.json` from the collection. Then apply step 2's theming to the support cards and step 3's balancing.
-- **Wallet decks** (players bring the cards they own): add `"deckRules": { "mode": "declared", "size": 30, "maxCopies": 2 }`. The default `deck` must hold at least `size` cards. Re-run sim; smaller decks favour the first player.
+- **Wallet decks** (players bring the cards they own): add `"deckRules": { "mode": "declared", "size": 30, "maxCopies": 2 }`. The default `deck` must hold at least `size` cards.
+- **Balance wallet decks too:** run `npx deckwright sim games/<id>.game.json --matches 1000 --decks random` as well as the default. Both must meet step 3's targets. Random decks play every card, and the sim lists the strongest and weakest cards. Smaller decks favour the first player.
 - **Rights:** the Rapture characters (`0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721`) are © LitVM Games. A game meant for release needs permission (see [references/pipeline.md](references/pipeline.md)). Prototypes are fine.
 
 ## 5. Check LitNode compatibility
@@ -123,6 +124,8 @@ TCG_DEV=1 TCG_GAME=games/<id>.game.json npx deckwright relay     # ws://127.0.0.
 ```
 
 Open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&name=alice` and `…&name=bob` in two tabs. Pick champions; with wallet decks, build or suggest a deck. Play a turn in each tab.
+- The relay reads champion stats from the chain, never from the page. With no network, add `TCG_CHAIN=off`: champions then fight with base stats.
+- **Owned-only test:** add `TCG_OWNED=1` to the relay and `&owned=1` to both URLs, and connect a wallet. The relay rejects collection cards that wallet doesn't hold.
 
 ## 8. Deliver
 
@@ -141,7 +144,8 @@ Don't break these when extending Deckwright itself.
   - No `Math.random`, `Date`, timers, `fetch`, `WebSocket`, storage, `crypto.`, `process.env` or `import()`, not even as words in strings.
   - Randomness comes only from `seededRandom(seed)`.
 - **Log shape:** two players, one integer action per log entry. Illegal actions are no-ops, never throws, and `maxTicks` bounds a match.
-- **Champions:** stats arrive as `ctx.agents[player].stats`; with no champion, every stat is 0. Client, relay and ruleset must all hydrate the same way.
+- **Champions:** stats arrive as `ctx.agents[player].stats`; with no champion, or a missing stat, it is 0, exactly as LitNode hydrates it. Every surface goes through `normalizeStats` (`src/core/champion.ts`); never add a different default.
+- **Ownership is not a rule:** the rules accept any declared card. The relay enforces owned-only decks (`src/tools/chain-check.ts`).
 - **Open information:** v1 has no hidden hands. Commit-reveal or ZK would be a new ruleset version.
 
 ## Troubleshooting

@@ -17,13 +17,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 
 import { die, flag, parseArgs } from './common';
-import { createRpc, decodeCoreStats, decodeString, encodeUintCall, pool, readTokenJson, RpcError, SEL, toHttp, traitsOf, TRANSFER_TOPIC, ZERO_TOPIC } from './evm';
+import { CHAINS, createRpc, decodeCoreStats, decodeString, encodeUintCall, pool, readTokenJson, RpcError, SEL, toHttp, traitsOf, TRANSFER_TOPIC, ZERO_TOPIC } from './evm';
 import type { CoreStats } from './evm';
-
-/** Known chains, so a builder can write `--chain liteforge` instead of two URLs. */
-const CHAINS: Record<string, { chainId: number; rpc: string; explorer: string }> = {
-  liteforge: { chainId: 4441, rpc: 'https://liteforge.rpc.caldera.xyz/http', explorer: 'https://liteforge.explorer.caldera.xyz' },
-};
 
 const args = parseArgs();
 const address = (args._[0] ?? die('usage: deckwright snapshot <collection address> (--chain liteforge | --rpc <url>) [--out collection]')).toLowerCase();
@@ -200,4 +195,4 @@ mkdirSync(outDir, { recursive: true });
 const collection = { name: name || address, symbol, chainId, rpc: rpcUrl, address, explorer, erc6699: withStats > 0, snapshotAt: new Date().toISOString(), count: cards.length };
 writeFileSync(join(outDir, 'cards.json'), `${JSON.stringify({ collection, cards }, null, 2)}\n`);
 log(`wrote ${join(outDir, 'cards.json')}: ${cards.length} card(s), ${withStats} with ERC-6699 stats, ${cards.filter((c) => c.art).length} with art`);
-if (!withStats) log('note: no ERC-6699 CoreStats found; champions will use neutral stats (pass --registry if the agents live in a registry)');
+if (!withStats) log('note: no ERC-6699 CoreStats found; champions will fight with base stats (all 0) (pass --registry if the agents live in a registry)');

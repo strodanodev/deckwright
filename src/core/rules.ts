@@ -1,5 +1,6 @@
 import { declare, declaredCard, decode, encode, endTurn, ENEMY_CHAMPION, enemyUnit, Op, OWN_CHAMPION, ownUnit, targetOf } from './actions';
 import type { CompiledGame } from './game';
+import { normalizeStats } from './champion';
 import { seededRandom, shuffle } from './rng';
 import type { AgentStats, CardDef, InitContext, MatchState, PlayerState, StatMapping, UnitState } from './types';
 
@@ -21,7 +22,7 @@ export interface Rules {
   isLegal(state: MatchState, action: number, side?: 0 | 1): boolean;
   /** Declared-deck games: the side's next declaration from the suggested deck (bots, relay fallback), or 0 when done. */
   suggestedDeclaration(state: MatchState, side: 0 | 1): number;
-  /** The champion numbers a player gets from their ERC-6699 stats. */
+  /** The champion numbers a player gets from their ERC-6699 stats (normalized; none or missing = 0). */
   champion(stats?: AgentStats): { life: number; spellPower: number; unitAttack: number; openingHand: number };
 }
 
@@ -35,17 +36,17 @@ export function createRules(game: CompiledGame): Rules {
   const R = config.rules;
   const maxTicks = config.litnode.maxTicks;
 
-  const mapStat = (m: StatMapping, stats: AgentStats): number => {
-    const raw = stats[m.stat];
-    const v = typeof raw === 'number' && raw >= 0 && raw <= 65535 ? raw : 32768;
-    return Math.round(m.min + ((m.max - m.min) * v) / 65535);
+  // Stats go through normalizeStats first, so a missing champion or stat is 0, exactly as LitNode hydrates it.
+  const mapStat = (m: StatMapping, stats: Required<AgentStats>): number => Math.round(m.min + ((m.max - m.min) * stats[m.stat]) / 65535);
+  const champion = (raw?: AgentStats): ReturnType<Rules['champion']> => {
+    const stats = normalizeStats(raw);
+    return {
+      life: mapStat(config.champion.life, stats),
+      spellPower: mapStat(config.champion.spellPower, stats),
+      unitAttack: mapStat(config.champion.unitAttack, stats),
+      openingHand: mapStat(config.champion.openingHand, stats),
+    };
   };
-  const champion = (stats: AgentStats = {}): ReturnType<Rules['champion']> => ({
-    life: mapStat(config.champion.life, stats),
-    spellPower: mapStat(config.champion.spellPower, stats),
-    unitAttack: mapStat(config.champion.unitAttack, stats),
-    openingHand: mapStat(config.champion.openingHand, stats),
-  });
 
   const card = (c: number): CardDef => cards[c];
   const bonus = (attackerCard: number, defenderCard: number): number => (beats[cardElement[attackerCard]][cardElement[defenderCard]] ? R.elementBonus : 0);
@@ -249,11 +250,12 @@ export function createRules(game: CompiledGame): Rules {
       const rnd = seededRandom(String(seed));
       const ids = [String(participants[0]), String(participants[1])];
       const players = ids.map((id): PlayerState => {
-        const ch = champion(ctx.agents?.[id]?.stats ?? {});
+        const ch = champion(ctx.agents?.[id]?.stats);
         return { id, life: ch.life, maxLife: ch.life, energy: 0, energyCap: R.energyStart - R.energyPerTurn, spellPower: ch.spellPower, unitAttack: ch.unitAttack, deck: declared ? [] : shuffle(deckList.slice(), rnd), hand: [], board: [], relics: [], fatigue: 0 };
       }) as [PlayerState, PlayerState];
       const first = (rnd() & 1) as 0 | 1;
-      const opening = ids.map((id) => champion(ctx.agents?.[id]?.stats ?? {}).openingHand) as [number, number];
+      const opening = ids.map((id) => champion(ctx.agents?.[id]?.stats).openingHand) as [number, number];
+      opening[first === 0 ? 1 : 0] += R.secondPlayerCards ?? 0;
       const s: MatchState = { v: 1, beat: 0, turn: first, turnNo: 1, over: false, winner: -1, p: players, last: 0 };
       if (declared) {
         // Decks come from the log: both sides declare before turn 1, then finishDecks shuffles and deals.
