@@ -64,6 +64,7 @@ A result is *official* only with both players' signatures plus at least one co-s
 
 ## Gaps and risks (v1)
 
+- **Draws can't be read ahead.** Each draw mixes the seed with the entropy of every accepted action up to that turn's start, so a draw is unknown until the opponent's previous turn is over. Mid-turn draws (draw spells) are knowable once the turn starts, but can't be steered.
 - **No hidden information.** A real hand needs commit-reveal:
   1. Each player commits `H(deckOrder, salt)` across a few opening entries.
   2. Draws reveal indexes.

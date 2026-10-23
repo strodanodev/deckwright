@@ -103,6 +103,8 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 - Owned-only matches (`TCG_OWNED=1`, the default for ranked) are enforced by the relay: it reads the wallet's holdings on chain and rejects any other collection card. The rules themselves accept any card, so casual play is open.
 - The relay also reads each champion's stats on chain and ignores what the client claims. A player with no champion fights with base stats (all 0), as LitNode hydrates them.
 
+**Mechanics:** seven keywords (guard, haste, rush, lifesteal, shield, poison, elusive); abilities that fire on play, death, turn start or attack; seven effect ops with chosen or automatic targets; hero powers per champion (by element, kind or highest stat). `import` gives a collection all of these through its design kit, and `sim` checks balance and fun targets.
+
 **Not in v1:**
 - hidden hands (the duel is open-information);
 - more than two players.

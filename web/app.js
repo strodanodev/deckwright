@@ -3,7 +3,7 @@
 // ruleset run, so a match replays identically everywhere. Practice is against the house bot;
 // ?relay=ws://127.0.0.1:7830&name=alice joins a dev relay (`TCG_DEV=1 pnpm relay`).
 // Every name on the page goes in through textContent.
-import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore } from "./engine/deckwright.js";
+import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore, describeCard, describeEffect, KEYWORDS } from "./engine/deckwright.js";
 import { createWallet } from "./lib/wallet.js";
 import { createHoldings } from "./lib/holdings.js";
 import { shortAddress } from "./lib/util.js";
@@ -94,6 +94,8 @@ function renderChampions() {
     stats.append(el("span", null, `♥${champ.life}`), el("span", null, `✦${champ.spellPower}`), el("span", null, `⚔+${champ.unitAttack}`), el("span", null, `✋${champ.openingHand}`));
     stats.title = "life · spell power · unit attack · opening hand";
     meta.append(stats);
+    const power = rules.heroPower({ tokenId: String(c.tokenId), stats: toStats(c.stats) });
+    if (power) meta.append(el("div", "sub power-line", `${power.name} (${power.cost}): ${describeEffect(power.effect, nameOf)}`));
     b.append(img, meta);
     if (owned.has(String(c.tokenId))) b.append(el("span", "owned", "Held"));
     b.addEventListener("click", () => start(c));
@@ -195,7 +197,7 @@ function beginMatch(champion, declaredDeck) {
   const claim = champion ? { tokenId: String(champion.tokenId), stats: toStats(champion.stats) } : undefined;
   session = RELAY
     ? RelaySession.dev(rules, RELAY, q.get("name") ?? `player-${randomSeed().slice(0, 6)}`, claim, wallet.snapshot().address ?? undefined)
-    : new LocalBotSession(rules, randomSeed(), claim?.stats, toStats(foeChamp?.stats));
+    : new LocalBotSession(rules, randomSeed(), claim, foeChamp ? { tokenId: String(foeChamp.tokenId), stats: toStats(foeChamp.stats) } : undefined);
   $("mode").textContent = RELAY ? "Dev relay" : "Practice vs bot";
   pick = null; prev = null; recent = [];
   session.onChange(render);
@@ -207,12 +209,10 @@ function beginMatch(champion, declaredDeck) {
 
 const act = (x) => { pick = null; session.act(x); };
 
-function describe(def) {
-  if (def.type === "unit") return (def.keywords ?? []).join(" · ");
-  const e = def.effect ?? {};
-  const t = { damage: `Deal ${e.amount}`, heal: `Heal ${e.amount}`, draw: `Draw ${e.amount}`, energy: `+${e.amount} energy`, buff: `+${e.attack ?? 0}/+${e.health ?? 0} to a unit` }[e.op] ?? "";
-  return def.type === "relic" ? `Relic · each turn: ${t}` : t;
-}
+// Card text comes from the rules library (core/effects.ts), so a new effect or keyword needs no client change.
+const nameOf = (id) => game.cards.find((c) => c.id === id)?.name ?? id;
+const describe = (def) => describeCard(def, nameOf).join(" · ");
+const keywordHelp = (def) => (def.keywords ?? []).map((k) => `${k}: ${KEYWORDS[k] ?? ""}`).join("\n");
 
 function cardEl(def, { unit = null, small = false } = {}) {
   const b = el("button", `card ${def.type}${small ? " small" : ""}`);
@@ -232,12 +232,15 @@ function cardEl(def, { unit = null, small = false } = {}) {
     b.append(el("div", "atk", unit ? unit.atk : def.attack), el("div", "hp", unit ? unit.hp : def.health));
   }
   if (unit?.guard) { b.classList.add("guard"); b.append(el("div", "tag", "guard")); }
+  if (unit?.shield) b.classList.add("shielded");
   if (unit && !unit.ready) b.classList.add("tired");
+  const help = keywordHelp(def);
+  if (help) b.title = help;
   b.setAttribute("aria-label", `${def.name}${def.type === "unit" ? `, ${unit ? unit.atk : def.attack} attack, ${unit ? unit.hp : def.health} health` : ""}${text ? `, ${text}` : ""}`);
   return b;
 }
 
-function heroEl(p, champ, label, hurt, onClick) {
+function heroEl(p, champ, label, hurt, onClick, powerBtn = null) {
   const wrap = el("div", "hero");
   wrap.dataset.el = champ ? elementOf(champ.element) : "neutral";
   const face = el("button", "hero-face");
@@ -253,8 +256,28 @@ function heroEl(p, champ, label, hurt, onClick) {
   energy.title = `energy ${p.energy}/${p.energyCap}`;
   for (let i = 0; i < Math.max(p.energyCap, p.energy); i++) energy.append(el("i", i < p.energy ? "full" : ""));
   info.append(energy, el("span", null, `deck ${p.deck.length} · hand ${p.hand.length}${p.spellPower ? ` · spell +${p.spellPower}` : ""}${p.unitAttack ? ` · units +${p.unitAttack}` : ""}`));
+  if (powerBtn) info.append(powerBtn);
   wrap.append(face, life, info);
   return wrap;
+}
+
+/** The hero power button: usable when the rules list a Power action; aimed powers ask for a target first. */
+function powerEl(p, moves, mine) {
+  const pw = p.power >= 0 ? game.champion.powers?.[p.power] : null;
+  if (!pw) return null;
+  const b = el("button", "power", `${pw.name} · ${pw.cost}`);
+  b.type = "button";
+  b.title = describeEffect(pw.effect, nameOf);
+  const uses = mine ? moves.filter((m) => m.op === Op.Power) : [];
+  b.disabled = !uses.length;
+  if (p.powerUsed) b.classList.add("used");
+  if (pick?.kind === "power") b.classList.add("picked");
+  b.addEventListener("click", () => {
+    if (uses.length === 1 && uses[0].target === 0) { act(uses[0].x); return; }
+    pick = pick?.kind === "power" ? null : { kind: "power", index: 0 };
+    render();
+  });
+  return b;
 }
 
 /** One line about what just happened, read from the action against the state before it. */
@@ -267,7 +290,8 @@ function narrate(before, s, meIdx) {
   const card = (c) => game.cards[c]?.name ?? "a card";
   const tgt = () => (target === ENEMY_CHAMPION ? (actor === meIdx ? "the enemy champion" : "your champion") : target < 10 ? card(E.board[target - 1]?.c) : target === 10 ? "" : card(P.board[target - 11]?.c));
   let line = "";
-  if (op === Op.Play) line = `${who} played ${card(P.hand[a])}${game.cards[P.hand[a]]?.effect?.op === "damage" || game.cards[P.hand[a]]?.effect?.op === "buff" ? ` → ${tgt()}` : ""}`;
+  if (op === Op.Play) line = `${who} played ${card(P.hand[a])}${target ? ` → ${tgt()}` : ""}`;
+  else if (op === Op.Power) line = `${who} used ${game.champion.powers?.[P.power]?.name ?? "a power"}${target ? ` → ${tgt()}` : ""}`;
   else if (op === Op.Attack) line = `${who}: ${card(P.board[a]?.c)} attacked ${tgt()}`;
   else if (op === Op.End) line = `${who} ended the turn`;
   else if (op === Op.Concede) line = `${s.winner === meIdx ? "Opponent" : "You"} conceded`;
@@ -294,13 +318,14 @@ function render() {
   const legal = myTurn ? rules.legalActions(s) : [];
   const moves = legal.map((x) => ({ x, ...decode(x) }));
   const targets = new Map();   // target code -> action, for the current pick
-  if (pick) for (const m of moves) if ((pick.kind === "hand" ? m.op === Op.Play : m.op === Op.Attack) && m.a === pick.index) targets.set(m.target, m.x);
+  const pickOp = { hand: Op.Play, unit: Op.Attack, power: Op.Power };
+  if (pick) for (const m of moves) if (m.op === pickOp[pick.kind] && m.a === pick.index) targets.set(m.target, m.x);
 
   if (RELAY && !foeChamp) foeChamp = byToken.get(String(session.champions?.[foe.id]?.tokenId)) ?? null;
-  const foeHero = heroEl(foe, foeChamp,RELAY ? "Opponent" : "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null);
+  const foeHero = heroEl(foe, foeChamp, RELAY ? "Opponent" : "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null, powerEl(foe, moves, false));
   $("foe-hero").replaceChildren(...foeHero.childNodes);
   $("foe-hero").dataset.el = foeHero.dataset.el;
-  const myHero = heroEl(me, mine, "You", hurtMe, null);
+  const myHero = heroEl(me, mine, "You", hurtMe, null, powerEl(me, moves, true));
   $("my-hero").replaceChildren(...myHero.childNodes);
   $("my-hero").dataset.el = myHero.dataset.el;
 
@@ -332,7 +357,8 @@ function render() {
     if (!plays.length) { b.classList.add("dead"); return b; }
     b.classList.add("can");
     if (pick?.kind === "hand" && pick.index === index) b.classList.add("picked");
-    const aimed = def.type === "spell" && (def.effect?.op === "damage" || def.effect?.op === "buff");
+    // A card needs a target pick when the rules offer more than one, or one that isn't the default (0).
+    const aimed = plays.length > 1 || plays[0].target !== 0;
     b.addEventListener("click", () => {
       if (!aimed) { act(plays[0].x); return; }
       pick = pick?.kind === "hand" && pick.index === index ? null : { kind: "hand", index };
@@ -343,7 +369,7 @@ function render() {
 
   $("end").disabled = !myTurn;
   $("concede").disabled = s.over;
-  const hint = !myTurn ? "" : pick?.kind === "hand" ? `choose a target for ${game.cards[me.hand[pick.index]]?.name}` : pick?.kind === "unit" ? "choose what to attack" : "play cards, attack, or end the turn";
+  const hint = !myTurn ? "" : pick?.kind === "hand" ? `choose a target for ${game.cards[me.hand[pick.index]]?.name}` : pick?.kind === "power" ? "choose a target for your hero power" : pick?.kind === "unit" ? "choose what to attack" : "play cards, attack, use your hero power, or end the turn";
   const status = $("status");
   status.replaceChildren();
   status.append(el("b", null, s.over ? "Match over" : myTurn ? "Your turn" : "Opponent's turn"), ` · turn ${s.turnNo}${hint ? ` · ${hint}` : ""}`);

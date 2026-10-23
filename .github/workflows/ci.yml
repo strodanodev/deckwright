@@ -35,10 +35,13 @@ jobs:
           node dist/cli.js web games/rapture-duel.game.json --out "$RUNNER_TEMP/web" > /dev/null
           diff -q <(tail -n +3 "$RUNNER_TEMP/web/engine/deckwright.js") <(tail -n +3 web/engine/deckwright.js)
 
+      - name: Demo game meets balance and fun targets
+        run: node dist/cli.js sim games/rapture-duel.game.json --matches 400 --decks mixed --strict
+
       - name: Builder path (create, sim, LitNode compatibility)
         run: |
           node dist/cli.js create "$RUNNER_TEMP/ci-game" --title "CI Game"
-          node dist/cli.js sim "$RUNNER_TEMP/ci-game/games/ci-game.game.json" --matches 100
+          node dist/cli.js sim "$RUNNER_TEMP/ci-game/games/ci-game.game.json" --matches 300 --strict
           node dist/cli.js title "$RUNNER_TEMP/ci-game/games/ci-game.game.json" --out "$RUNNER_TEMP/rulesets"
 
       - name: Package contents

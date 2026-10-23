@@ -49,10 +49,10 @@ Design by the numbers in **[references/design-guide.md](references/design-guide.
 
 Hard rules: the validator rejects anything else, with a clear message.
 - **Ids:** card and element ids are kebab-case and unique; `element` must be one of `elements[].id`.
-- **Units:** `attack` 0–99 and `health` 1–99. `keywords` may only be `guard` or `haste`.
-- **Spells and relics:** each has one `effect`, which is one of:
-  - `{ "op": "damage" | "heal" | "draw" | "energy", "amount": n }`
-  - `{ "op": "buff", "attack": a, "health": h }`
+- **Units:** `attack` 0–99 and `health` 1–99. `keywords` from `guard`, `haste`, `rush`, `lifesteal`, `shield`, `poison`, `elusive`. Up to 3 `abilities`: `{ "on": "play" | "death" | "turnStart" | "attack", "effect": … }`.
+- **Spells and relics:** each has one `effect`: `damage`, `heal`, `draw`, `energy` (with `amount`), `buff` (`attack`, `health`), `shield`, or `summon` (`card`, `count`). Add `"target"` to aim it, such as `"all-enemy-units"`. Relics and non-`play` abilities take automatic targets only.
+- **Hero powers:** `champion.powers`, chosen per champion by its card's `element` (or `kind`, or highest `stat`), with one unconditioned default.
+- Every op, target and keyword is in game-config.md; prices are in design-guide.md. Give the set interaction: removal, a few area effects, keywords on a third of the units.
 - **Deck:** `deck` is `{ cardId: copies }` with 5–120 cards in total.
 - **Version:** `litnode.rulesetId` is `<id>.v1`. Bump it to `.v2` and up on any rules or card change after a release.
 - **Art (optional):** a card's `art` can point to a local image, for example `"./assets/cards/kraken.webp"` under `web/`. The site's CSP serves same-origin images only. With no art, cards show an element glyph, and that's fine.
@@ -73,6 +73,19 @@ Iterate until the sim meets these targets. Each pass is a JSON edit plus a re-ru
 | `avg turns` | 8–16 | Too short: more health and cheaper healing. Too long: more attack and fewer `guard` |
 | `never played` | few cards | Cheapen or strengthen them, or cut them |
 
+The sim then prints **fun targets**. They are signals that the set plays as more than a race of plain creatures. Get every one to ✓:
+
+| Target | Want | If not |
+|---|---|---|
+| attacks at the champion | at most 85% | More guards, rush, removal, and units worth trading |
+| spells, relics, powers | at least 15% of plays | More spells; add hero powers |
+| board leader wins | at least 50% | Boards must matter: more abilities, fewer haste face-hitters |
+| champion edge wins | at most 62% | Narrow the `champion` ranges |
+| close finishes | at least 15% | Lower starting life; fewer heals |
+| match length spread | at least ±2 turns | More variety in the curve and effects |
+
+`--strict` makes any miss (and first-player wins outside 45–55%) exit 1.
+
 ## 4. Optional: build it from an NFT collection
 
 Any ERC-721 works. ERC-6699 `coreStats` make champions; without them, champions are neutral.
@@ -81,6 +94,8 @@ Any ERC-721 works. ERC-6699 `coreStats` make champions; without them, champions 
 npx deckwright snapshot <address> --chain liteforge --out collection
 npx deckwright import collection/cards.json --id <game-id> --out games
 ```
+
+`import` applies the design kit: each element gets an archetype (aggro, control, defense, value), units get its keywords and abilities by tier, and each element gets spells, a relic and a hero power. `--plain` gives bare stat lines instead.
 
 - **`snapshot`:** for chains other than Liteforge, use `--rpc <url>` and, if the chain has a Blockscout explorer, `--explorer <url>`. It downloads the art.
 - **`import`:** rewrites `games/<id>.game.json` from the collection. Then apply step 2's theming to the support cards and step 3's balancing.
@@ -147,6 +162,7 @@ Don't break these when extending Deckwright itself.
 - **Champions:** stats arrive as `ctx.agents[player].stats`; with no champion, or a missing stat, it is 0, exactly as LitNode hydrates it. Every surface goes through `normalizeStats` (`src/core/champion.ts`); never add a different default.
 - **Ownership is not a rule:** the rules accept any declared card. The relay enforces owned-only decks (`src/tools/chain-check.ts`).
 - **Open information:** v1 has no hidden hands. Commit-reveal or ZK would be a new ruleset version.
+- **Draws** come from the seed plus the entropy of accepted actions up to the turn start, never from deck order alone, so nobody can read draws ahead of the game.
 
 ## Troubleshooting
 
@@ -162,11 +178,10 @@ Don't break these when extending Deckwright itself.
 
 The source is at https://github.com/strodanodev/deckwright: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
 1. Add it to the `Effect` union in `src/core/types.ts`.
-2. Handle it in `resolve()` in `src/core/rules.ts`.
-3. Accept it in `validateGame()`.
-4. List its targets in `legalActions()`.
-5. Teach the bot's score in `src/core/bot.ts`.
-6. Describe it in `describe()` in `web/app.js`.
-7. Re-run `pnpm test`, `pnpm sim`, `pnpm title` and `pnpm web`.
+2. Add one entry to `OPS` in `src/core/effects.ts`: field checks, allowed targets, default target, resolution (through `Fx`) and card text. Validation, legal actions, the bot, the sim and the client's card text pick it up from there.
+3. If it needs a new engine primitive, add it to `Fx` and implement it in `fxFor()` in `src/core/rules.ts`.
+4. Re-run `pnpm test`, `pnpm sim`, `pnpm title` and `pnpm web`.
+
+A keyword is an entry in `KEYWORDS` (effects.ts) plus its check where it acts in rules.ts (`hit()` for damage keywords, `act()` for attack rules).
 
 LitNode hosting (deferred) is in [references/litnode.md](references/litnode.md).

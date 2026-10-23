@@ -2,7 +2,7 @@
   "title": "Rapture Duel",
   "description": "Card duel built from Rapture — ARC 1 (0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721 on chain 4441).",
   "litnode": {
-    "rulesetId": "rapture-duel.v3",
+    "rulesetId": "rapture-duel.v4",
     "tickRate": 4,
     "maxTicks": 600,
     "modes": [
@@ -49,8 +49,8 @@
   "champion": {
     "life": {
       "stat": "resilience",
-      "min": 22,
-      "max": 32
+      "min": 20,
+      "max": 26
     },
     "spellPower": {
       "stat": "intelligence",
@@ -66,7 +66,60 @@
       "stat": "agility",
       "min": 3,
       "max": 5
-    }
+    },
+    "powers": [
+      {
+        "id": "earth-power",
+        "name": "Earth Ward",
+        "cost": 2,
+        "element": "earth",
+        "effect": {
+          "op": "shield"
+        }
+      },
+      {
+        "id": "lava-power",
+        "name": "Lava Strike",
+        "cost": 2,
+        "element": "lava",
+        "effect": {
+          "op": "damage",
+          "amount": 2,
+          "target": "enemy-champion"
+        }
+      },
+      {
+        "id": "metal-power",
+        "name": "Metal Forge",
+        "cost": 1,
+        "element": "metal",
+        "effect": {
+          "op": "summon",
+          "card": "construct"
+        }
+      },
+      {
+        "id": "water-power",
+        "name": "Water Bolt",
+        "cost": 3,
+        "element": "water",
+        "effect": {
+          "op": "damage",
+          "amount": 1,
+          "target": "enemy"
+        }
+      },
+      {
+        "id": "rally",
+        "name": "Rally",
+        "cost": 2,
+        "effect": {
+          "op": "buff",
+          "attack": 1,
+          "health": 1
+        }
+      }
+    ]
   },
   "rules": {
     "boardSlots": 5,
@@ -78,7 +131,7 @@
     "elementBonus": 1,
     "fatigue": true,
     "secondPlayerEnergy": 1,
-    "secondPlayerCards": 2
+    "secondPlayerCards": 1
   },
   "cards": [
     {
@@ -87,15 +140,29 @@
       "type": "unit",
       "element": "water",
       "cost": 5,
-      "attack": 5,
-      "health": 6,
+      "attack": 4,
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/175b87c80aa32ce4dca9a4f41d8e62b5e043cac3611baf54b8f1bedf7e93758c.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967296"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "oreus",
@@ -106,12 +173,16 @@
       "attack": 1,
       "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/68820cdb5252508e0347f003378266a0b9ef6c353bdf056289d45aaee20134b8.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967297"
-      }
+      },
+      "keywords": [
+        "guard"
+      ]
     },
     {
       "id": "tharnyx",
@@ -119,18 +190,29 @@
       "type": "unit",
       "element": "lava",
       "cost": 5,
-      "attack": 6,
-      "health": 7,
-      "keywords": [
-        "haste"
-      ],
+      "attack": 5,
+      "health": 5,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/119f32e6c473e50c1dd915d04606c6a1ab91ad91f4de9c233ccccda0d31ff579.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967298"
-      }
+      },
+      "keywords": [
+        "haste"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 3,
+            "target": "enemy"
+          }
+        }
+      ]
     },
     {
       "id": "korvazh",
@@ -138,15 +220,29 @@
       "type": "unit",
       "element": "metal",
       "cost": 5,
-      "attack": 5,
-      "health": 5,
+      "attack": 4,
+      "health": 3,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/b984bc3fb5b4a11f50c70255150055056a91370941c7d6b7f1524b2c9ad01757.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967299"
-      }
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct",
+            "count": 2
+          }
+        }
+      ]
     },
     {
       "id": "nyxarion",
@@ -154,15 +250,29 @@
       "type": "unit",
       "element": "water",
       "cost": 5,
-      "attack": 5,
-      "health": 6,
+      "attack": 4,
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/947491ef9a7841c1d14c4ac4350de8827526b526d85acdcfe8088121a4aaf586.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967300"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "halvorne",
@@ -170,15 +280,28 @@
       "type": "unit",
       "element": "earth",
       "cost": 5,
-      "attack": 5,
-      "health": 5,
+      "attack": 4,
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/1b2e5140bab23a27af6a0a52b6b0317cf96b59bec2dab386cd9ca419ca8f7153.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967301"
-      }
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "shield",
+            "target": "all-own-units"
+          }
+        }
+      ]
     },
     {
       "id": "pyravane",
@@ -186,18 +309,29 @@
       "type": "unit",
       "element": "lava",
       "cost": 5,
-      "attack": 5,
-      "health": 6,
-      "keywords": [
-        "haste"
-      ],
+      "attack": 4,
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/6bb176b997fb26d10c74e095f9c887ac5f00ab48b0cedc05fd4b6a36d0fb35c5.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967302"
-      }
+      },
+      "keywords": [
+        "haste"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 3,
+            "target": "enemy"
+          }
+        }
+      ]
     },
     {
       "id": "serrivane",
@@ -205,18 +339,29 @@
       "type": "unit",
       "element": "metal",
       "cost": 5,
-      "attack": 5,
-      "health": 5,
-      "keywords": [
-        "haste"
-      ],
+      "attack": 4,
+      "health": 3,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/373870bffb3b05f4d9744cbfbd66aeb15c5f105dda5427ef09f95efc76411396.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967303"
-      }
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct",
+            "count": 2
+          }
+        }
+      ]
     },
     {
       "id": "marrowquill",
@@ -225,17 +370,28 @@
       "element": "water",
       "cost": 5,
       "attack": 5,
-      "health": 7,
-      "keywords": [
-        "guard"
-      ],
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/86158078aa7ec6d00d24d9464613a8640928804f27dda8c63b3b842c4debcdf6.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967304"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "golvexis",
@@ -244,14 +400,27 @@
       "element": "earth",
       "cost": 5,
       "attack": 5,
-      "health": 6,
+      "health": 4,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/f98ad450b28a5cff6eb79d72416806d261118ca477991ec4b9bde17ec6465a5e.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967305"
-      }
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "shield",
+            "target": "all-own-units"
+          }
+        }
+      ]
     },
     {
       "id": "ruvaxel",
@@ -259,15 +428,29 @@
       "type": "unit",
       "element": "lava",
       "cost": 5,
-      "attack": 6,
-      "health": 7,
+      "attack": 5,
+      "health": 5,
       "rarity": "legendary",
+      "kind": "God",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/8a24cc18dd7d2c71ddcea74ba50737777106213168d86d63b8e7f295cd04ba12.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967306"
-      }
+      },
+      "keywords": [
+        "haste"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 3,
+            "target": "enemy"
+          }
+        }
+      ]
     },
     {
       "id": "cindralux",
@@ -275,15 +458,28 @@
       "type": "unit",
       "element": "metal",
       "cost": 3,
-      "attack": 3,
-      "health": 3,
+      "attack": 2,
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/aa7e8da295949ddb9d4ac46005777bb3fea97c02e33189f9fc96a0cd54e7fb77.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967307"
-      }
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
     },
     {
       "id": "dessalyne",
@@ -292,17 +488,18 @@
       "element": "water",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/482eb2f0f990fa19cce9ae0ae551e899944021850112e4ce3fbab3c9262e6e54.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967308"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ]
     },
     {
       "id": "thessaly-vorn",
@@ -311,17 +508,28 @@
       "element": "earth",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "guard"
-      ],
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/def77ff2ce380d5a1f70cf4c51f43b1a2ebb739435b048320cdc8de9a7daaf07.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967309"
-      }
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "turnStart",
+          "effect": {
+            "op": "buff",
+            "health": 1,
+            "target": "this"
+          }
+        }
+      ]
     },
     {
       "id": "skoria-vex",
@@ -329,15 +537,26 @@
       "type": "unit",
       "element": "lava",
       "cost": 3,
-      "attack": 3,
-      "health": 3,
+      "attack": 2,
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/ce9b84f41c356a6509739cd27c9a4f53858393c5e4cfa8872b8acec786c67b8e.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967310"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "enemy"
+          }
+        }
+      ]
     },
     {
       "id": "kessandrix",
@@ -346,17 +565,27 @@
       "element": "metal",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 1,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/05b54a236f6699ac60bced54c64edae879baa49c79e382eb71f04f5f3d45a6af.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967311"
-      }
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
     },
     {
       "id": "umbryssel",
@@ -365,17 +594,18 @@
       "element": "water",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/72de137f16ec176ccda42f847a6935f7cc303a7aa477c723adb6b3c353fe0fa5.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967312"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ]
     },
     {
       "id": "dravenkil",
@@ -384,14 +614,28 @@
       "element": "earth",
       "cost": 3,
       "attack": 2,
-      "health": 3,
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/f59d630b7e923d957dcb76d44c453c545d0b38b188fd9115e3c00bcc8531e01d.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967313"
-      }
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "turnStart",
+          "effect": {
+            "op": "buff",
+            "health": 1,
+            "target": "this"
+          }
+        }
+      ]
     },
     {
       "id": "morvaxis",
@@ -400,17 +644,25 @@
       "element": "lava",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 1,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/9a58dc6562bbf281a594fc8cfa647f281069530458b1b3c339d5015aa39ee365.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967314"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "enemy"
+          }
+        }
+      ]
     },
     {
       "id": "aurexe",
@@ -419,17 +671,27 @@
       "element": "metal",
       "cost": 3,
       "attack": 2,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 1,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/975c9acc9cd523d227ba1ceb5d1c2c0de3be1e822fe73533ae09def57dd49d61.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967315"
-      }
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
     },
     {
       "id": "neruvia-shalqor",
@@ -438,17 +700,18 @@
       "element": "water",
       "cost": 3,
       "attack": 3,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "health": 2,
       "rarity": "rare",
+      "kind": "Demigod",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/e7b44a259cec5adfc0bd5c97d8f138104b77aab0c4cd762b38225eccae73eb3d.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967316"
-      }
+      },
+      "keywords": [
+        "lifesteal"
+      ]
     },
     {
       "id": "terramond",
@@ -456,15 +719,20 @@
       "type": "unit",
       "element": "earth",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/f5cbdb1f76cbc2920a81ed1ca981811335ec950988718e0af2ad18cc08f6df2a.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967317"
-      }
+      },
+      "keywords": [
+        "guard",
+        "shield"
+      ]
     },
     {
       "id": "ghalbrith",
@@ -472,15 +740,20 @@
       "type": "unit",
       "element": "earth",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/65d70be04dc94b549c8d8e52f28d2be7e85ce518578b84d8a57505e44a6c4a9f.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967318"
-      }
+      },
+      "keywords": [
+        "guard",
+        "shield"
+      ]
     },
     {
       "id": "threxalune",
@@ -488,18 +761,20 @@
       "type": "unit",
       "element": "earth",
       "cost": 4,
-      "attack": 3,
-      "health": 3,
-      "keywords": [
-        "haste"
-      ],
+      "attack": 2,
+      "health": 2,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/26401bb84909cc19f8e864add4ac4907c508634a9860e6d9d2c29c9eb6bf9348.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967319"
-      }
+      },
+      "keywords": [
+        "guard",
+        "shield"
+      ]
     },
     {
       "id": "vorrukhal",
@@ -507,15 +782,29 @@
       "type": "unit",
       "element": "lava",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/ca4edc7d64e8672bdae48422d7e8fd62cf3f525510f9fcbc0197268d0c0cf10a.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967320"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "magnarok",
@@ -523,18 +812,29 @@
       "type": "unit",
       "element": "lava",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
-      "keywords": [
-        "haste"
-      ],
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/2fdfc1deeebfd18856fbec989870f296555ab94075cb7c5ec9e784b31e6e71f5.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967321"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "lavaskarn",
@@ -543,14 +843,28 @@
       "element": "lava",
       "cost": 4,
       "attack": 4,
-      "health": 5,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/c7e098d24b647648ce27a601a36c401c244ab82054b930cb846dae79e73817a1.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967322"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "draxolune",
@@ -558,15 +872,20 @@
       "type": "unit",
       "element": "metal",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/302e1173d66042e7f0e947c5b8d52c728c64e607a5931239b224cb3e8b69c43f.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967323"
-      }
+      },
+      "keywords": [
+        "poison",
+        "shield"
+      ]
     },
     {
       "id": "crucibrand",
@@ -574,15 +893,20 @@
       "type": "unit",
       "element": "metal",
       "cost": 4,
-      "attack": 4,
-      "health": 4,
+      "attack": 3,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/f6079df2f950001f8791150fbf2007c1afb55b15d7aa19cd02cc31ab012179e9.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967324"
-      }
+      },
+      "keywords": [
+        "poison",
+        "shield"
+      ]
     },
     {
       "id": "umbraloch",
@@ -590,15 +914,26 @@
       "type": "unit",
       "element": "water",
       "cost": 4,
-      "attack": 4,
-      "health": 3,
+      "attack": 3,
+      "health": 2,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/1f38b2f9df51e7ab20a9a2d239b46181ecf208fb1a6a2e5a7d47d085069ff3fd.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967325"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "ossuarcane",
@@ -607,14 +942,25 @@
       "element": "water",
       "cost": 4,
       "attack": 4,
-      "health": 5,
+      "health": 3,
       "rarity": "epic",
+      "kind": "Titan",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/78134c2d9883c1309d20080530474f10d14c576ec5050e543f5576ba0a7a318c.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967326"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
     },
     {
       "id": "skarnhold-vex",
@@ -623,14 +969,28 @@
       "element": "lava",
       "cost": 2,
       "attack": 2,
-      "health": 2,
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/e172e71ecc3e6ad33f3888542b4ed7d2489eeb2f852835516688f2a14a8554d3.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967327"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "attack",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-champion"
+          }
+        }
+      ]
     },
     {
       "id": "vantrikol",
@@ -639,18 +999,18 @@
       "element": "metal",
       "cost": 2,
       "attack": 1,
-      "health": 2,
-      "keywords": [
-        "guard",
-        "haste"
-      ],
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/9edd5f041721dbe1d3a5909eb30def25113ad3dbfc94963c89e976353ec257e9.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967328"
-      }
+      },
+      "keywords": [
+        "poison"
+      ]
     },
     {
       "id": "zerunal",
@@ -659,17 +1019,25 @@
       "element": "water",
       "cost": 2,
       "attack": 2,
-      "health": 2,
-      "keywords": [
-        "haste"
-      ],
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/9739511c8c067bac5f38d3f492033af21b693f7d66c0392966f778e430e4a840.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967329"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-unit"
+          }
+        }
+      ]
     },
     {
       "id": "gravemarrow",
@@ -678,14 +1046,18 @@
       "element": "earth",
       "cost": 2,
       "attack": 2,
-      "health": 2,
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/b97332430b37a5a2ebe1c34e7ea7a267f2ae76f00513af69294553fd0adb5d9b.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967330"
-      }
+      },
+      "keywords": [
+        "shield"
+      ]
     },
     {
       "id": "vaulkrenn",
@@ -694,14 +1066,28 @@
       "element": "lava",
       "cost": 2,
       "attack": 2,
-      "health": 2,
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/d0988c885cd31ad6e5e432b62b342997276b50a46aa23ff8aa065032b2328f95.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967331"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "attack",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-champion"
+          }
+        }
+      ]
     },
     {
       "id": "vantricol",
@@ -710,17 +1096,18 @@
       "element": "metal",
       "cost": 2,
       "attack": 1,
-      "health": 2,
-      "keywords": [
-        "guard"
-      ],
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/998e7a0e69f046bc28df7c44394d5097ad03cd30778a7af3f24e91a38e250336.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967332"
-      }
+      },
+      "keywords": [
+        "poison"
+      ]
     },
     {
       "id": "quelmora",
@@ -729,14 +1116,25 @@
       "element": "water",
       "cost": 2,
       "attack": 2,
-      "health": 2,
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/d584bf5f158c12e3207786551c7be5e4b2810596e04c4306c1360cdbc8f35560.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967333"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-unit"
+          }
+        }
+      ]
     },
     {
       "id": "bramweld",
@@ -745,17 +1143,18 @@
       "element": "earth",
       "cost": 2,
       "attack": 1,
-      "health": 2,
-      "keywords": [
-        "guard"
-      ],
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/e9f42a8613d6c156b86f91956ded71faf31db4d42f3910dfaa3500a8298d4e41.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967334"
-      }
+      },
+      "keywords": [
+        "shield"
+      ]
     },
     {
       "id": "kalthrix-molvane",
@@ -764,17 +1163,28 @@
       "element": "lava",
       "cost": 2,
       "attack": 1,
-      "health": 2,
-      "keywords": [
-        "guard"
-      ],
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/4d50c64f0d2a59c5302b2f0d352ac06c049d97f2565f41b787907fc69b807fe2.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967335"
-      }
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "attack",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-champion"
+          }
+        }
+      ]
     },
     {
       "id": "ferrivane",
@@ -783,14 +1193,18 @@
       "element": "metal",
       "cost": 2,
       "attack": 2,
-      "health": 2,
+      "health": 1,
       "rarity": "uncommon",
+      "kind": "King",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/bd92072f09a7ed971cfbf92865002a6aae859dba91ebdb3fe0e1337e20a3e69f.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967336"
-      }
+      },
+      "keywords": [
+        "poison"
+      ]
     },
     {
       "id": "fenvraxil",
@@ -800,16 +1214,17 @@
       "cost": 1,
       "attack": 1,
       "health": 1,
-      "keywords": [
-        "haste"
-      ],
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/d9082199533f567b35f9413d03f2ce78ecd730b97e1ac4d463db7226a980f1a9.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967337"
-      }
+      },
+      "keywords": [
+        "haste"
+      ]
     },
     {
       "id": "ferrix-vane",
@@ -818,14 +1233,24 @@
       "element": "metal",
       "cost": 1,
       "attack": 1,
-      "health": 2,
+      "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/7cb8444939c0261707a7c61a11184591930c55aa00f12907d5e520631ffc1600.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967338"
-      }
+      },
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
     },
     {
       "id": "nepharyl",
@@ -834,14 +1259,24 @@
       "element": "water",
       "cost": 1,
       "attack": 1,
-      "health": 2,
+      "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/6b054d6b9c7b49d16fb10598dd7674e86e2cc0a0bd32056272138f93a4a54157.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967339"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "heal",
+            "amount": 2
+          }
+        }
+      ]
     },
     {
       "id": "torvaleth-rinn",
@@ -852,12 +1287,16 @@
       "attack": 1,
       "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/52ef6918ce99c990c8e158287086686b8f0cb054b19252418d52af37a11b7a17.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967340"
-      }
+      },
+      "keywords": [
+        "guard"
+      ]
     },
     {
       "id": "slagwyrd",
@@ -867,16 +1306,17 @@
       "cost": 1,
       "attack": 1,
       "health": 1,
-      "keywords": [
-        "haste"
-      ],
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/bc50b94a49be14130b77e885449e8825b1ce120b184ba1ee61680b10252db117.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967341"
-      }
+      },
+      "keywords": [
+        "haste"
+      ]
     },
     {
       "id": "brasswyn",
@@ -887,12 +1327,22 @@
       "attack": 1,
       "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/9a38c6bcfa3d544bafe845ba6e7b2c3521339ed45d0be02ba2a9897accdff94d.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967342"
-      }
+      },
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
     },
     {
       "id": "yslende-corr",
@@ -903,12 +1353,22 @@
       "attack": 1,
       "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/c8efe383d19e423265cbb8ecc347042d081aca2a3fa0356449f37e3e89edeedf.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967343"
-      }
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "heal",
+            "amount": 2
+          }
+        }
+      ]
     },
     {
       "id": "cairnmere",
@@ -919,12 +1379,16 @@
       "attack": 1,
       "health": 1,
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/58e6eb0aa9909e5da00bd67d4491e6ced2405352078e89cc8ccc8e66f6cb9b94.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967344"
-      }
+      },
+      "keywords": [
+        "guard"
+      ]
     },
     {
       "id": "flaethrix",
@@ -934,17 +1398,17 @@
       "cost": 1,
       "attack": 1,
       "health": 1,
-      "keywords": [
-        "guard",
-        "haste"
-      ],
       "rarity": "common",
+      "kind": "Mortal",
       "art": "ipfs://bafybeiavbbijdepmedx2lwhyaz4ihre2cemmimzwfhgucjywskxmciobx4/1ad279dfe172a0d03431b1413228eed98aba4a94d9c34395a8698e5616a4f99b.webp",
       "token": {
         "chainId": 4441,
         "collection": "0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721",
         "tokenId": "4294967345"
-      }
+      },
+      "keywords": [
+        "haste"
+      ]
     },
     {
       "id": "tempering",
@@ -982,6 +1446,155 @@
         "amount": 1
       },
       "rarity": "epic"
+    },
+    {
+      "id": "earth-ward",
+      "name": "Earth Ward",
+      "type": "spell",
+      "element": "earth",
+      "cost": 1,
+      "effect": {
+        "op": "shield",
+        "target": "own-unit"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "earth-quake",
+      "name": "Earth Quake",
+      "type": "spell",
+      "element": "earth",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "all-units"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "earth-bastion",
+      "name": "Earth Bastion",
+      "type": "relic",
+      "element": "earth",
+      "cost": 3,
+      "effect": {
+        "op": "shield",
+        "target": "newest-own-unit"
+      },
+      "rarity": "uncommon"
+    },
+    {
+      "id": "lava-burst",
+      "name": "Lava Burst",
+      "type": "spell",
+      "element": "lava",
+      "cost": 1,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "enemy"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "lava-surge",
+      "name": "Lava Surge",
+      "type": "spell",
+      "element": "lava",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 5,
+        "target": "enemy"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "lava-idol",
+      "name": "Lava Idol",
+      "type": "relic",
+      "element": "lava",
+      "cost": 3,
+      "effect": {
+        "op": "damage",
+        "amount": 1
+      },
+      "rarity": "uncommon"
+    },
+    {
+      "id": "metal-assembly",
+      "name": "Metal Assembly",
+      "type": "spell",
+      "element": "metal",
+      "cost": 2,
+      "effect": {
+        "op": "summon",
+        "card": "construct",
+        "count": 2
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "metal-overclock",
+      "name": "Metal Overclock",
+      "type": "spell",
+      "element": "metal",
+      "cost": 3,
+      "effect": {
+        "op": "buff",
+        "attack": 3,
+        "health": 3
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "water-lash",
+      "name": "Water Lash",
+      "type": "spell",
+      "element": "water",
+      "cost": 2,
+      "effect": {
+        "op": "damage",
+        "amount": 3,
+        "target": "enemy-unit"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "water-insight",
+      "name": "Water Insight",
+      "type": "spell",
+      "element": "water",
+      "cost": 3,
+      "effect": {
+        "op": "draw",
+        "amount": 2
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "water-tide",
+      "name": "Water Tide",
+      "type": "spell",
+      "element": "water",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "all-enemy-units"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "construct",
+      "name": "Construct",
+      "type": "unit",
+      "element": "metal",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "rarity": "common"
     }
   ],
   "deck": {
@@ -1037,7 +1650,18 @@
     "flaethrix": 1,
     "tempering": 2,
     "bellows": 2,
-    "eternal-forge": 2
+    "eternal-forge": 2,
+    "earth-ward": 1,
+    "earth-quake": 1,
+    "earth-bastion": 1,
+    "lava-burst": 1,
+    "lava-surge": 1,
+    "lava-idol": 1,
+    "metal-assembly": 1,
+    "metal-overclock": 1,
+    "water-lash": 1,
+    "water-insight": 1,
+    "water-tide": 1
   },
   "deckRules": {
     "mode": "declared",

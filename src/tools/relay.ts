@@ -143,7 +143,8 @@ let turnTimer: ReturnType<typeof setTimeout> | null = null;
 let ended = false;
 
 const broadcast = (msg: unknown): void => { for (const s of table) s.peer?.send(msg); };
-const ctx = (): { agents: Record<string, { stats: AgentStats }> } => ({ agents: Object.fromEntries(table.map((s) => [s.id, { stats: s.stats }])) });
+// The same ctx the clients build from `start` and LitNode hydrates: stats, plus the token id that picks the hero power.
+const ctx = (): { agents: Record<string, { stats: AgentStats; tokenId?: string }> } => ({ agents: Object.fromEntries(table.map((s) => [s.id, { stats: s.stats, ...(s.tokenId ? { tokenId: s.tokenId } : {}) }])) });
 const startMsg = (): unknown => ({ t: 'start', matchId: MATCH_ID, rulesetId: game.litnode.rulesetId, buildHash: BUILD, seed: SEED, participants: table.map((s) => s.id), champions: Object.fromEntries(table.map((s) => [s.id, { tokenId: s.tokenId, stats: s.stats }])), ownedOnly: OWNED, entries });
 
 function record(side: 0 | 1, x: number): void {

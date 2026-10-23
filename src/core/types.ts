@@ -20,21 +20,73 @@ export type StatName = keyof AgentStats;
 export type CardType = 'unit' | 'spell' | 'relic';
 
 /**
- * What a spell does when played, or what a relic does at the start of each of its owner's turns.
- * - damage: hit the chosen target (enemy champion or unit) for `amount` (+ champion spellPower)
- * - heal:   restore `amount` life to your champion
+ * Who an effect hits. Chosen specs take the target the player picks (spells, hero powers and a unit's `play`
+ * ability); automatic specs need no choice and are the only kind other triggers and relics may use.
+ * - chosen:    'enemy' (enemy champion or unit), 'enemy-unit', 'own-unit', 'any-unit'
+ * - automatic: 'self' (your champion), 'enemy-champion', 'all-enemy-units', 'all-own-units', 'all-units',
+ *              'weakest-enemy' (the enemy unit with the least health, leftmost on ties; else the enemy champion),
+ *              'newest-own-unit', 'this' (the unit whose ability it is)
+ * Enemy units with `elusive` can't be chosen; automatic effects still reach them.
+ */
+export type TargetSpec =
+  | 'enemy' | 'enemy-unit' | 'own-unit' | 'any-unit'
+  | 'self' | 'enemy-champion' | 'all-enemy-units' | 'all-own-units' | 'all-units' | 'weakest-enemy' | 'newest-own-unit' | 'this';
+
+/**
+ * What a spell, ability, hero power or relic does. Every op is defined once, in core/effects.ts.
+ * - damage: deal `amount` (+ spellPower for spells) to the target(s). Default target: 'enemy' when chosen, else 'enemy-champion'
+ * - heal:   restore `amount` life to your champion, or health to units (up to their maximum). Default 'self'
  * - draw:   draw `amount` cards
- * - buff:   give one of your units +attack/+health
+ * - buff:   +attack/+health to unit(s). Default 'own-unit' when chosen, else 'newest-own-unit'
  * - energy: gain `amount` energy this turn
+ * - summon: put `count` (default 1) copies of unit card `card` onto your board
+ * - shield: give unit(s) a shield that blocks the next damage. Default like buff
  */
 export type Effect =
-  | { op: 'damage'; amount: number }
-  | { op: 'heal'; amount: number }
+  | { op: 'damage'; amount: number; target?: TargetSpec }
+  | { op: 'heal'; amount: number; target?: TargetSpec }
   | { op: 'draw'; amount: number }
-  | { op: 'buff'; attack?: number; health?: number }
-  | { op: 'energy'; amount: number };
+  | { op: 'buff'; attack?: number; health?: number; target?: TargetSpec }
+  | { op: 'energy'; amount: number }
+  | { op: 'summon'; card: string; count?: number }
+  | { op: 'shield'; target?: TargetSpec };
 
-export type Keyword = 'guard' | 'haste';
+/**
+ * - guard:     enemies must attack guards first
+ * - haste:     can attack the turn it is played
+ * - rush:      can attack units (not the champion) the turn it is played
+ * - lifesteal: damage it deals heals its champion
+ * - shield:    the first damage it would take is blocked
+ * - poison:    any damage it deals to a unit destroys that unit
+ * - elusive:   enemy spells, powers and abilities can't choose it
+ */
+export type Keyword = 'guard' | 'haste' | 'rush' | 'lifesteal' | 'shield' | 'poison' | 'elusive';
+
+/** When a unit's ability fires. 'play' may take a chosen target; the others are automatic. */
+export type Trigger = 'play' | 'death' | 'turnStart' | 'attack';
+
+export interface Ability {
+  on: Trigger;
+  effect: Effect;
+}
+
+/**
+ * A champion's hero power: once per turn, for `cost` energy. Each champion gets the first power whose
+ * conditions all match (an entry with none is the default, for players without a champion). Conditions read
+ * the champion's card in this game (found by token id) and its normalized ERC-6699 stats.
+ */
+export interface HeroPower {
+  id: string;
+  name: string;
+  cost: number;
+  effect: Effect;
+  /** The champion card's element. */
+  element?: string;
+  /** The champion card's kind (a collection trait, such as a Rapture Kind). */
+  kind?: string;
+  /** The champion's highest ERC-6699 stat (ties go to the first in strength, agility, resilience, intelligence order). */
+  stat?: StatName;
+}
 
 /** Optional link from a card definition to the NFT it represents. Display-only in v1. */
 export interface CardToken {
@@ -56,8 +108,12 @@ export interface CardDef {
   /** Units only. */
   health?: number;
   keywords?: Keyword[];
+  /** Units only: effects that fire on play, on death, at its owner's turn start, or when it attacks. */
+  abilities?: Ability[];
   /** Spells and relics. */
   effect?: Effect;
+  /** A collection trait (such as a Rapture Kind), for display and hero-power matching. */
+  kind?: string;
   /** Card face: a project asset path for bundled art, or an http(s)/ipfs URL for NFT art. */
   art?: string;
   rarity?: string;
@@ -88,6 +144,8 @@ export interface ChampionConfig {
   /** Bonus attack on every unit you play. */
   unitAttack: StatMapping;
   openingHand: StatMapping;
+  /** Optional hero powers; see HeroPower. */
+  powers?: HeroPower[];
 }
 
 export interface RulesConfig {
@@ -162,8 +220,14 @@ export interface UnitState {
   c: number;
   atk: number;
   hp: number;
+  /** Health cap for heals: the card's health plus buffs. */
+  max: number;
   guard: boolean;
   ready: boolean;
+  /** Played this turn (a rush unit may attack only units). */
+  fresh: boolean;
+  /** Blocks the next damage. */
+  shield: boolean;
 }
 
 export interface PlayerState {
@@ -181,10 +245,13 @@ export interface PlayerState {
   board: UnitState[];
   relics: number[];
   fatigue: number;
+  /** Index into `champion.powers`, or -1 for none. */
+  power: number;
+  powerUsed: boolean;
 }
 
 export interface MatchState {
-  v: 1;
+  v: 2;
   /** Log entries consumed so far. */
   beat: number;
   /** Index of the player to act. */
@@ -200,13 +267,21 @@ export interface MatchState {
   phase?: 'decks' | 'play';
   /** Declared-deck matches only: the cards each side has declared so far (card indices). */
   decl?: [number[], number[]];
-  /** Declared-deck matches only: the match seed (decks are shuffled once both are declared). */
-  seed?: string;
+  /** The match seed: decks and draws come from it. */
+  seed: string;
+  /**
+   * Draw entropy: folded from every accepted action. Draws come from the seed and `turnEnt` (the entropy when
+   * the turn began), so nobody can compute a draw before the opponent has finished the turn before it.
+   */
+  ent: number;
+  turnEnt: number;
+  /** Draws made since the turn began. */
+  drawn: number;
   /** Declared-deck matches only: each side's opening hand size, drawn once decks are declared. */
   opening?: [number, number];
 }
 
 /** What LitNode passes `init` as `ctx`. */
 export interface InitContext {
-  agents?: Record<string, { stats?: AgentStats } | undefined>;
+  agents?: Record<string, { stats?: AgentStats; tokenId?: string } | undefined>;
 }

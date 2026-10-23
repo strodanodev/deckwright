@@ -1,3 +1,4 @@
+import { checkEffect, KEYWORDS, TRIGGERS } from './effects';
 import type { CardDef, GameConfig, StatMapping } from './types';
 
 /** A validated config with cards indexed for the rules engine. */
@@ -13,6 +14,8 @@ export interface CompiledGame {
   /** Declared-deck games: the suggested declaration (deckRules.size cards spread over the default deck). */
   suggestedDeck: number[];
   cardIndex: Record<string, number>;
+  /** NFT token id -> card index, for finding a champion's card (element, kind) from `ctx.agents[p].tokenId`. */
+  tokenCard: Record<string, number>;
 }
 
 const RULESET_ID = /^[a-z0-9][a-z0-9-]*\.v\d+$/;
@@ -51,6 +54,19 @@ export function validateGame(cfg: GameConfig): string[] {
   mapping('spellPower', ch?.spellPower, 0, 20);
   mapping('unitAttack', ch?.unitAttack, 0, 20);
   mapping('openingHand', ch?.openingHand, 0, 10);
+  const unitIds = new Set((cfg.cards ?? []).filter((c) => c.type === 'unit').map((c) => c.id));
+  if (ch?.powers !== undefined) {
+    need(Array.isArray(ch.powers) && ch.powers.length <= 32, 'champion.powers must be a list of at most 32 powers');
+    for (const pw of Array.isArray(ch.powers) ? ch.powers : []) {
+      const at = `champion power ${JSON.stringify(pw?.id)}`;
+      need(CARD_ID.test(pw?.id ?? ''), `${at}: id must be kebab-case`);
+      need(typeof pw?.name === 'string' && pw.name.length > 0, `${at}: name is required`);
+      need(isInt(pw?.cost, 0, 10), `${at}: cost must be an integer 0-10`);
+      need(pw?.element === undefined || elementIds.has(pw.element), `${at}: unknown element ${JSON.stringify(pw?.element)}`);
+      need(pw?.stat === undefined || STATS.includes(pw.stat), `${at}: stat must be one of ${STATS.join(', ')}`);
+      for (const e of checkEffect(pw?.effect, unitIds, { automatic: false, onUnit: false })) errs.push(`${at}: ${e}`);
+    }
+  }
 
   const r = cfg.rules ?? ({} as GameConfig['rules']);
   need(isInt(r.boardSlots, 1, 5), 'rules.boardSlots must be 1-5 (the action encoding addresses 5 own units)');
@@ -74,14 +90,15 @@ export function validateGame(cfg: GameConfig): string[] {
     need(isInt(c.cost, 0, 99), `${at}: cost must be an integer 0-99`);
     if (c.type === 'unit') {
       need(isInt(c.attack, 0, 99) && isInt(c.health, 1, 99), `${at}: a unit needs integer attack (0-99) and health (1-99)`);
-      for (const k of c.keywords ?? []) need(k === 'guard' || k === 'haste', `${at}: unknown keyword ${k}`);
-    } else if (c.type === 'spell' || c.type === 'relic') {
-      const e = c.effect;
-      need(!!e, `${at}: a ${c.type} needs an effect`);
-      if (e) {
-        if (e.op === 'buff') need((e.attack ?? 0) >= 0 && (e.health ?? 0) >= 0 && ((e.attack ?? 0) > 0 || (e.health ?? 0) > 0), `${at}: buff needs attack and/or health > 0`);
-        else need(['damage', 'heal', 'draw', 'energy'].includes(e.op) && isInt(e.amount, 1, 99), `${at}: effect op must be damage|heal|draw|energy|buff with an integer amount 1-99`);
+      for (const k of c.keywords ?? []) need(k in KEYWORDS, `${at}: unknown keyword ${k} (known: ${Object.keys(KEYWORDS).join(', ')})`);
+      need(c.abilities === undefined || (Array.isArray(c.abilities) && c.abilities.length <= 3), `${at}: abilities must be a list of at most 3`);
+      for (const a of Array.isArray(c.abilities) ? c.abilities : []) {
+        need(a?.on in TRIGGERS, `${at}: ability trigger must be one of ${Object.keys(TRIGGERS).join(', ')}`);
+        for (const e of checkEffect(a?.effect, unitIds, { automatic: a?.on !== 'play', onUnit: a?.on !== 'death' })) errs.push(`${at}: ${a?.on} ability: ${e}`);
       }
+    } else if (c.type === 'spell' || c.type === 'relic') {
+      need(!!c.effect, `${at}: a ${c.type} needs an effect`);
+      if (c.effect) for (const e of checkEffect(c.effect, unitIds, { automatic: c.type === 'relic', onUnit: false })) errs.push(`${at}: ${e}`);
     } else {
       errs.push(`${at}: type must be unit, spell or relic`);
     }
@@ -117,7 +134,9 @@ export function compileGame(cfg: GameConfig): CompiledGame {
   const deckList: number[] = [];
   // Object key order is insertion order for string keys, so this is stable across machines.
   for (const [id, n] of Object.entries(cfg.deck)) for (let i = 0; i < n; i++) deckList.push(cardIndex[id]);
-  return { config: cfg, cards: cfg.cards, cardElement: cfg.cards.map((c) => elementIndex[c.element]), beats, deckList, suggestedDeck: suggestDeck(deckList, cfg.deckRules), cardIndex };
+  const tokenCard: Record<string, number> = {};
+  cfg.cards.forEach((c, i) => { if (c.token) tokenCard[String(c.token.tokenId)] = i; });
+  return { config: cfg, cards: cfg.cards, cardElement: cfg.cards.map((c) => elementIndex[c.element]), beats, deckList, suggestedDeck: suggestDeck(deckList, cfg.deckRules), cardIndex, tokenCard };
 }
 
 /** deckRules.size cards spread evenly over the default deck, within maxCopies (a sensible curve, deterministic). */

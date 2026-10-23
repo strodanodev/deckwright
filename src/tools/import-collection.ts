@@ -3,7 +3,11 @@
  * unit whose cost, attack and health come from its ERC-6699 CoreStats, and the template's neutral spells
  * and relics are added so the deck has answers.
  *
- *   deckwright import <cards.json> --id my-game [--out games] [--title "My Duel"] [--max-cards 300] [--deck-units 40]
+ *   deckwright import <cards.json> --id my-game [--out games] [--title "My Duel"] [--max-cards 300] [--deck-units 40] [--plain]
+ *
+ * The design kit (tools/design-kit.ts) then gives each element an archetype (aggro, control, defense, value):
+ * units get its keywords and abilities by tier, each element gets its spells and relic, and champions get the
+ * element's hero power. --plain skips the kit (plain stat-line units, the template's support cards only).
  *
  * Cost and rarity: from the Kind trait when every card has a known Rapture Kind, otherwise from the
  * card's stat power (strength + agility + resilience + intelligence) in quintiles. Elements form a cycle
@@ -15,6 +19,7 @@ import { join, resolve } from 'node:path';
 import { validateGame } from '../core/game';
 import type { CardDef, GameConfig, Keyword } from '../core/types';
 import { die, flag, parseArgs } from './common';
+import { archetypes, kitPowers, kitSupport, kitUnit } from './design-kit';
 import { pkgPath } from './paths';
 
 interface SnapshotCard {
@@ -101,17 +106,26 @@ const units: CardDef[] = source.map((c) => {
     health: Math.max(1, Math.round((st.res / U16) * (tier.cost + 4))),
     ...(keywords.length ? { keywords } : {}),
     rarity: tier.rarity,
+    ...(c.kind ? { kind: c.kind } : {}),
     ...(c.image ? { art: c.image } : {}),
     token: { chainId: snap.collection.chainId, collection: snap.collection.address, tokenId: c.tokenId },
   };
 });
 const support = template.cards.filter((c) => c.type !== 'unit' && c.element === 'neutral');
 
+// The design kit: archetype abilities on units (by tier = cost), element spells and relics, hero powers.
+const plain = args.plain === true;
+const arch = archetypes(elementIds);
+const kitted = plain ? units : units.map((u) => kitUnit(u, arch[u.element], u.cost));
+const kitCards = plain ? [] : kitSupport(elements.filter((e) => e.id !== 'neutral'), arch);
+const hasToken = kitCards.some((c) => c.type === 'unit');
+
 // The deck every player plays: up to --deck-units units (spread across the set) plus two of each support card.
 const deckUnits = Math.min(units.length, Number(flag(args, 'deck-units') ?? 60));
 const deck: Record<string, number> = {};
 for (let i = 0; i < deckUnits; i++) deck[units[Math.floor((i * units.length) / deckUnits)].id] = 1;
 for (const s of support) deck[s.id] = 2;
+for (const k of kitCards) if (k.type !== 'unit') deck[k.id] = 1;   // element spells and relics; the token is summoned, not drawn
 
 const game: GameConfig = {
   ...template,
@@ -119,7 +133,8 @@ const game: GameConfig = {
   description: `Card duel built from ${snap.collection.name} (${snap.collection.address} on chain ${snap.collection.chainId}).`,
   litnode: { ...template.litnode, rulesetId: `${id}.v1` },
   elements,
-  cards: [...units, ...support],
+  champion: plain ? template.champion : { ...template.champion, powers: kitPowers(elements.filter((e) => e.id !== 'neutral'), arch, hasToken) },
+  cards: [...kitted, ...support, ...kitCards],
   deck,
 };
 const errs = validateGame(game);
@@ -129,4 +144,4 @@ const outDir = resolve(flag(args, 'out') ?? 'games');
 mkdirSync(outDir, { recursive: true });
 const file = join(outDir, `${id}.game.json`);
 writeFileSync(file, `${JSON.stringify(game, null, 2)}\n`);
-console.log(`created ${file}: ${units.length} units from ${snap.collection.name}, ${support.length} support cards, deck of ${Object.values(deck).reduce((a, b) => a + b, 0)}`);
+console.log(`created ${file}: ${units.length} units from ${snap.collection.name}${plain ? '' : ` (design kit: ${Object.entries(arch).map(([e, a]) => `${e} ${a}`).join(', ')})`}, ${support.length + kitCards.length} support cards, deck of ${Object.values(deck).reduce((a, b) => a + b, 0)}`);

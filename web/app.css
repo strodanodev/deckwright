@@ -127,6 +127,12 @@ code { font: 12px ui-monospace, Consolas, monospace; }
              background: rgba(8, 7, 6, .8); border: 1px solid var(--el); border-radius: 4px; padding: 1px 4px; }
 .card.guard { box-shadow: 0 0 0 2px #d6c27a, 0 4px 14px rgba(0, 0, 0, .5); }
 .card.tired { filter: saturate(.55) brightness(.8); }
+.card.shielded { outline: 2px solid #9fd8ff; outline-offset: 2px; }
+.hero-info .power { justify-self: start; margin-top: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--gold); background: transparent; color: var(--ink); font: 600 12px ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+.hero-info .power:disabled { opacity: .45; cursor: default; }
+.hero-info .power.used { text-decoration: line-through; }
+.hero-info .power.picked { background: var(--gold); color: #120f0b; }
+.power-line { font-size: 11px; }
 .relics .card { width: calc(var(--card-w) * .62); }
 .relics .card .text, .relics .card .cost { display: none; }
 

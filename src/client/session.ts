@@ -29,6 +29,8 @@ export interface MatchSession {
 }
 
 export interface Champion { tokenId: string; stats: AgentStats }
+/** What a side brings to `init`: its champion's stats and token id (the token picks its hero power). */
+export interface AgentClaim { stats?: AgentStats; tokenId?: string }
 
 type Entry = { k: number; inputs: number[] };
 
@@ -46,9 +48,9 @@ abstract class BaseSession implements MatchSession {
   public onChange(cb: () => void): void { this.listeners.push(cb); }
   protected changed(status?: string): void { if (status !== undefined) this.status = status; for (const cb of this.listeners) cb(); }
 
-  protected begin(seed: string, participants: string[], stats: Record<string, AgentStats | undefined>): void {
+  protected begin(seed: string, participants: string[], agents: Record<string, AgentClaim | undefined>): void {
     this.participants = participants;
-    this.state = this.rules.init(seed, participants, { agents: Object.fromEntries(participants.map((p) => [p, { stats: normalizeStats(stats[p]) }])) });
+    this.state = this.rules.init(seed, participants, { agents: Object.fromEntries(participants.map((p) => [p, { stats: normalizeStats(agents[p]?.stats), ...(agents[p]?.tokenId ? { tokenId: String(agents[p]!.tokenId) } : {}) }])) });
   }
 
   protected apply(entry: Entry): void {
@@ -68,11 +70,11 @@ export class LocalBotSession extends BaseSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly bot: (s: MatchState, side?: 0 | 1) => number;
 
-  /** `stats` / `botStats`: each side's champion; omitted means no champion (every stat 0, as LitNode hydrates it). */
-  constructor(rules: Rules, seed = `${Date.now()}`, stats?: AgentStats, botStats?: AgentStats) {
+  /** `you` / `foe`: each side's champion; omitted means no champion (every stat 0, as LitNode hydrates it). */
+  constructor(rules: Rules, seed = `${Date.now()}`, you?: AgentClaim, foe?: AgentClaim) {
     super(rules, 'you');
     this.bot = greedyBot(rules);
-    this.begin(seed, ['you', 'bot'], { you: stats, bot: botStats });
+    this.begin(seed, ['you', 'bot'], { you, bot: foe });
     this.status = 'practice vs bot';
     this.botTurn();
   }
@@ -173,7 +175,7 @@ export class RelaySession extends BaseSession {
         const participants = m.participants as string[];
         this.champions = Object.fromEntries(participants.map((p) => [p, champions[p]?.tokenId ? { tokenId: String(champions[p].tokenId), stats: champions[p].stats ?? {} } : undefined]));
         this.ownedOnly = m.ownedOnly === true;
-        this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, champions[p]?.stats])));
+        this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, { stats: champions[p]?.stats, tokenId: champions[p]?.tokenId ?? undefined }])));
         for (const e of (m.entries as Entry[]) ?? []) this.apply(e);
         this.changed('live');
         if (this.pendingDeck) { const d = this.pendingDeck; this.pendingDeck = null; this.declareDeck(d); }
@@ -231,5 +233,5 @@ export async function sessionFromUrl(rules: Rules, champion?: Champion): Promise
   if (q.get('match')) return RelaySession.placed(rules, champion);
   const relay = q.get('relay');
   if (relay) return RelaySession.dev(rules, relay, q.get('name') ?? `player-${Math.floor(Math.random() * 1e6)}`, champion);
-  return new LocalBotSession(rules, `${Date.now()}`, champion?.stats);
+  return new LocalBotSession(rules, `${Date.now()}`, champion);
 }

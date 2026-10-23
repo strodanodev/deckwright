@@ -10,10 +10,10 @@ The types are defined in `src/core/types.ts` and validated by `validateGame()` i
 | `description` | string? | Arcade blurb |
 | `litnode` | object | See below |
 | `elements` | `ElementDef[]` | `{ id, name, beats?: id[], color? }` |
-| `champion` | object | How ERC-6699 stats become champion numbers |
+| `champion` | object | How ERC-6699 stats become champion numbers, and hero powers |
 | `rules` | object | Board and economy numbers |
 | `cards` | `CardDef[]` | The card pool |
-| `deck` | `{ cardId: copies }` | The default deck (5–120 cards). With fixed decks every player plays it; with declared decks it's the suggested and fallback deck. Shuffled per player from the match seed |
+| `deck` | `{ cardId: copies }` | The default deck (5–120 cards). With fixed decks every player plays it; with declared decks it's the suggested and fallback deck |
 | `deckRules` | `{ mode, size, maxCopies }`? | How decks are chosen; omit for `fixed`. See below |
 | `cardBack` | string? | Asset path for the client |
 
@@ -68,6 +68,23 @@ A player with no champion, and any stat a champion lacks, counts as 0, so they g
 | `spellPower` | Added to damage spells and relics |
 | `unitAttack` | Added to the attack of every unit you play |
 | `openingHand` | Cards drawn before turn 1 |
+| `powers` | Optional hero powers (below) |
+
+### Hero powers (`champion.powers`)
+
+```json
+"powers": [
+  { "id": "lava-power", "name": "Lava Strike", "cost": 2, "element": "lava", "effect": { "op": "damage", "amount": 2, "target": "enemy-champion" } },
+  { "id": "rally", "name": "Rally", "cost": 2, "effect": { "op": "buff", "attack": 1, "health": 1 } }
+]
+```
+
+- Once per turn, for `cost` energy (0–10), a player may use their champion's power. Its effect works like a spell's, without spellPower.
+- Each champion gets the **first** power whose conditions all match:
+  - `element` / `kind`: the champion card's element or kind (the card whose `token.tokenId` is the champion's token);
+  - `stat`: the champion's highest ERC-6699 stat.
+- An entry with no conditions is the default; players without a champion only match that one.
+- Power by element keeps NFT rarity out of it (powers are sidegrades). Rapture Duel uses element powers.
 
 ## `rules`
 
@@ -99,20 +116,49 @@ A player with no champion, and any stat a champion lacks, counts as 0, so they g
 
 **Units**
 - `attack`: 0–99. `health`: 1–99.
-- Keywords:
-  - `guard`: enemies must attack guards first; spells ignore guard.
-  - `haste`: can attack on the turn it is played.
-- Units play with `ready = haste` and become ready at their owner's turn start. Attacking deals simultaneous damage.
+- Units can attack from their owner's next turn. Attacking deals simultaneous damage. A unit with element `beats` the defender's deals `elementBonus` extra.
+- `keywords` (any of):
 
-**Spells** resolve once. **Relics** fire their effect at each of their owner's turn starts. Effects:
+| Keyword | Effect |
+|---|---|
+| `guard` | Enemies must attack guards first (spells ignore guard) |
+| `haste` | Can attack the turn it is played |
+| `rush` | Can attack units, not the champion, the turn it is played |
+| `lifesteal` | Damage it deals heals its champion (up to starting life) |
+| `shield` | The first damage it would take is blocked |
+| `poison` | Any damage it deals to a unit destroys that unit |
+| `elusive` | Enemy spells, powers and abilities can't choose it (area effects still hit) |
 
-| `effect` | Spell target | Relic target |
+- `abilities` (up to 3): `{ "on": trigger, "effect": effect }`.
+
+| `on` | Fires | Targets |
 |---|---|---|
-| `{ "op": "damage", "amount": n }` | Enemy champion or enemy unit (+spellPower, +elementBonus vs a unit) | Enemy champion |
-| `{ "op": "heal", "amount": n }` | Own champion (capped at starting life) | Own champion |
-| `{ "op": "draw", "amount": n }` | — | — |
-| `{ "op": "energy", "amount": n }` | Gain energy now | Gain energy at turn start |
-| `{ "op": "buff", "attack": a, "health": h }` | One of your units | Your newest unit |
+| `play` | When you play it | May take a chosen target (the play action's target). With no legal target it fizzles and the unit is still played |
+| `death` | When it dies (chains up to 16 rounds per action) | Automatic only; `this` doesn't work |
+| `turnStart` | At each of its owner's turn starts, after relics | Automatic only |
+| `attack` | When it attacks, before the hit | Automatic only |
+
+**Spells** resolve once. **Relics** fire their effect at each of their owner's turn starts (automatic targets only).
+
+### Effects
+
+Every op is defined once in `src/core/effects.ts`, so rules, bot, sim and card text all agree.
+
+| `effect` | Does | Default target (chosen / automatic) |
+|---|---|---|
+| `{ "op": "damage", "amount": n }` | Deal n (spells add spellPower). Units take +elementBonus from cards whose element beats theirs | `enemy` / `enemy-champion` |
+| `{ "op": "heal", "amount": n }` | Restore life (up to starting life) or unit health (up to its max) | `self` |
+| `{ "op": "draw", "amount": n }` | Draw n | — |
+| `{ "op": "energy", "amount": n }` | Gain n energy this turn | — |
+| `{ "op": "buff", "attack": a, "health": h }` | +a/+h (raises max health too) | `own-unit` / `newest-own-unit` |
+| `{ "op": "shield" }` | Give a shield | `own-unit` / `newest-own-unit` |
+| `{ "op": "summon", "card": id, "count": n }` | Put n copies of a unit card on your board (no play ability) | — |
+
+Add `"target"` to choose who it hits:
+- **Chosen** (spells, hero powers, `play` abilities): `enemy` (champion or unit), `enemy-unit`, `own-unit`, `any-unit`.
+- **Automatic** (anywhere): `self`, `enemy-champion`, `all-enemy-units`, `all-own-units`, `all-units`, `weakest-enemy` (least health, leftmost; else the champion), `newest-own-unit`, `this` (the ability's own unit).
+
+The validator rejects a chosen target where no choice is possible, an op/target pair that makes no sense, and a summon of anything but a unit card.
 
 ## Actions (`core/actions.ts`)
 
@@ -120,12 +166,12 @@ A player with no champion, and any stat a champion lacks, counts as 0, so they g
 
 | Part | Values |
 |---|---|
-| `op` | 1 play, 2 attack, 3 end turn, 4 concede, 5 declare (deck phase; bits 3–17 are the card index) |
+| `op` | 1 play, 2 attack, 3 end turn, 4 concede, 5 declare (deck phase; bits 3–17 are the card index), 6 hero power |
 | `a` | Hand index (play) or board slot (attack) |
-| `target` | 0 enemy champion; 1–9 enemy unit at slot+1; 10 own champion; 11–15 own unit at slot+11 |
+| `target` | 0 enemy champion; 1–9 enemy unit at slot+1; 10 own champion; 11–15 own unit at slot+11. Effects that need no choice use 0 |
 
 Helpers:
-- `play(handIndex, target)`, `attack(slot, target)`, `endTurn()`, `concede()`
+- `play(handIndex, target)`, `attack(slot, target)`, `power(target)`, `endTurn()`, `concede()`
 - `enemyUnit(slot)`, `ownUnit(slot)`
 - `rules.legalActions(state)` lists every legal action; `rules.isLegal(state, x)` checks one.
 
@@ -133,7 +179,8 @@ Concede is honoured on either player's frame. The gauntlet injects it for a play
 
 ## State
 
-- `MatchState` is what `serialize()` returns: everything, including deck order. LitNode hashes it into the state root.
+- `MatchState` is what `serialize()` returns: everything. LitNode hashes it into the state root.
+- **Draws** take a random card of the deck, from the seed, the entropy of every accepted action up to the turn's start (`turnEnt`), and a draw counter. Nobody can compute a draw before the opponent has finished the turn before it, yet every replay draws the same cards.
 - `view()` replaces each deck with a count.
 - `winner` is −1 while the match is live, 0 or 1 for the winning side, and 2 for a draw.
 - `scores()` gives `{ winner: 1, loser: 0 }`; a draw gives 0 to both.

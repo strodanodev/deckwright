@@ -6,13 +6,14 @@
  * other side sends 0. Any integer is safe to replay: an illegal action is a no-op.
  *
  *   bits 0-2  op      0 none, 1 play, 2 attack, 3 end turn, 4 concede (honoured on either side's frame),
- *                     5 declare (deck phase, either side)
+ *                     5 declare (deck phase, either side), 6 hero power
  *   bits 3-6  a       hand index (play) or attacker board slot (attack)
- *   bits 7-10 target  0 enemy champion, 1-9 enemy unit (slot+1), 10 own champion, 11-15 own unit (slot+11)
+ *   bits 7-10 target  0 enemy champion, 1-9 enemy unit (slot+1), 10 own champion, 11-15 own unit (slot+11);
+ *                     0 when the effect needs no choice
  *   bits 3-17 card    declare: index into the game's card list
  */
 
-export const Op = { None: 0, Play: 1, Attack: 2, End: 3, Concede: 4, Declare: 5 } as const;
+export const Op = { None: 0, Play: 1, Attack: 2, End: 3, Concede: 4, Declare: 5, Power: 6 } as const;
 export type OpCode = typeof Op[keyof typeof Op];
 
 export const ENEMY_CHAMPION = 0;
@@ -34,6 +35,8 @@ export const play = (handIndex: number, target = ENEMY_CHAMPION): number => enco
 export const attack = (slot: number, target = ENEMY_CHAMPION): number => encode(Op.Attack, slot, target);
 export const endTurn = (): number => encode(Op.End);
 export const concede = (): number => encode(Op.Concede);
+/** Use your champion's hero power (once per turn) on `target` (0 when it needs no choice). */
+export const power = (target = ENEMY_CHAMPION): number => encode(Op.Power, 0, target);
 /** Put one card (index into the game's card list) into your declared deck. */
 export const declare = (card: number): number => Op.Declare | ((card & 0x7fff) << 3);
 export const declaredCard = (x: number): number => (x >>> 3) & 0x7fff;

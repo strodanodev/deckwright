@@ -2,7 +2,7 @@
   "title": "Starter Duel",
   "description": "A two-player NFT card duel. Champions are ERC-6699 agents; matches settle on LitNode.",
   "litnode": {
-    "rulesetId": "starter-duel.v2",
+    "rulesetId": "starter-duel.v3",
     "tickRate": 4,
     "maxTicks": 600,
     "modes": ["ranked", "casual"],
@@ -16,10 +16,11 @@
     { "id": "air", "name": "Air", "beats": ["earth"], "color": "#d8f0ff" }
   ],
   "champion": {
-    "life": { "stat": "resilience", "min": 22, "max": 32 },
+    "life": { "stat": "resilience", "min": 18, "max": 24 },
     "spellPower": { "stat": "intelligence", "min": 0, "max": 2 },
     "unitAttack": { "stat": "strength", "min": 0, "max": 1 },
-    "openingHand": { "stat": "agility", "min": 3, "max": 5 }
+    "openingHand": { "stat": "agility", "min": 3, "max": 5 },
+    "powers": [{ "id": "rally", "name": "Rally", "cost": 2, "effect": { "op": "buff", "attack": 1, "health": 1 } }]
   },
   "rules": {
     "boardSlots": 5,
@@ -36,15 +37,17 @@
   "cards": [
     { "id": "forge-apprentice", "name": "Forge Apprentice", "type": "unit", "element": "neutral", "cost": 1, "attack": 1, "health": 2, "rarity": "common" },
     { "id": "ember-scout", "name": "Ember Scout", "type": "unit", "element": "fire", "cost": 1, "attack": 2, "health": 1, "keywords": ["haste"], "rarity": "common" },
-    { "id": "tide-warden", "name": "Tide Warden", "type": "unit", "element": "water", "cost": 2, "attack": 1, "health": 4, "keywords": ["guard"], "rarity": "common" },
-    { "id": "gale-runner", "name": "Gale Runner", "type": "unit", "element": "air", "cost": 2, "attack": 3, "health": 2, "keywords": ["haste"], "rarity": "uncommon" },
-    { "id": "stone-sentinel", "name": "Stone Sentinel", "type": "unit", "element": "earth", "cost": 3, "attack": 2, "health": 5, "keywords": ["guard"], "rarity": "uncommon" },
-    { "id": "storm-hawk", "name": "Storm Hawk", "type": "unit", "element": "air", "cost": 3, "attack": 3, "health": 3, "keywords": ["haste"], "rarity": "rare" },
-    { "id": "anvil-golem", "name": "Anvil Golem", "type": "unit", "element": "neutral", "cost": 4, "attack": 3, "health": 6, "rarity": "uncommon" },
-    { "id": "ember-vanguard", "name": "Ember Vanguard", "type": "unit", "element": "fire", "cost": 4, "attack": 5, "health": 4, "rarity": "rare" },
-    { "id": "basalt-titan", "name": "Basalt Titan", "type": "unit", "element": "earth", "cost": 5, "attack": 4, "health": 7, "keywords": ["guard"], "rarity": "epic" },
-    { "id": "deepwater-leviathan", "name": "Deepwater Leviathan", "type": "unit", "element": "water", "cost": 6, "attack": 6, "health": 7, "rarity": "legendary" },
+    { "id": "tide-warden", "name": "Tide Warden", "type": "unit", "element": "water", "cost": 2, "attack": 1, "health": 4, "keywords": ["guard"], "rarity": "common", "abilities": [{ "on": "play", "effect": { "op": "heal", "amount": 2 } }] },
+    { "id": "gale-runner", "name": "Gale Runner", "type": "unit", "element": "air", "cost": 2, "attack": 3, "health": 2, "keywords": ["rush"], "rarity": "uncommon" },
+    { "id": "stone-sentinel", "name": "Stone Sentinel", "type": "unit", "element": "earth", "cost": 3, "attack": 2, "health": 4, "keywords": ["guard", "shield"], "rarity": "uncommon" },
+    { "id": "storm-hawk", "name": "Storm Hawk", "type": "unit", "element": "air", "cost": 3, "attack": 3, "health": 2, "keywords": ["haste", "elusive"], "rarity": "rare" },
+    { "id": "thorn-adder", "name": "Thorn Adder", "type": "unit", "element": "earth", "cost": 2, "attack": 1, "health": 2, "keywords": ["poison"], "rarity": "uncommon" },
+    { "id": "anvil-golem", "name": "Anvil Golem", "type": "unit", "element": "neutral", "cost": 4, "attack": 3, "health": 5, "rarity": "uncommon", "abilities": [{ "on": "death", "effect": { "op": "summon", "card": "forge-apprentice" } }] },
+    { "id": "ember-vanguard", "name": "Ember Vanguard", "type": "unit", "element": "fire", "cost": 4, "attack": 4, "health": 3, "rarity": "rare", "abilities": [{ "on": "play", "effect": { "op": "damage", "amount": 2 } }] },
+    { "id": "basalt-titan", "name": "Basalt Titan", "type": "unit", "element": "earth", "cost": 5, "attack": 4, "health": 6, "keywords": ["guard"], "rarity": "epic", "abilities": [{ "on": "turnStart", "effect": { "op": "buff", "health": 1, "target": "this" } }] },
+    { "id": "deepwater-leviathan", "name": "Deepwater Leviathan", "type": "unit", "element": "water", "cost": 6, "attack": 6, "health": 6, "rarity": "legendary", "keywords": ["lifesteal"] },
     { "id": "spark", "name": "Spark", "type": "spell", "element": "fire", "cost": 1, "effect": { "op": "damage", "amount": 2 }, "rarity": "common" },
+    { "id": "wildfire", "name": "Wildfire", "type": "spell", "element": "fire", "cost": 3, "effect": { "op": "damage", "amount": 1, "target": "all-enemy-units" }, "rarity": "rare" },
     { "id": "quake", "name": "Quake", "type": "spell", "element": "earth", "cost": 3, "effect": { "op": "damage", "amount": 4 }, "rarity": "uncommon" },
     { "id": "tidal-mend", "name": "Tidal Mend", "type": "spell", "element": "water", "cost": 2, "effect": { "op": "heal", "amount": 5 }, "rarity": "common" },
     { "id": "tailwind", "name": "Tailwind", "type": "spell", "element": "air", "cost": 1, "effect": { "op": "draw", "amount": 2 }, "rarity": "uncommon" },
@@ -73,6 +76,8 @@
     "bellows": 1,
     "eternal-forge": 1,
     "cinder-totem": 1,
-    "verdant-idol": 1
+    "verdant-idol": 1,
+    "thorn-adder": 2,
+    "wildfire": 1
   }
 }
