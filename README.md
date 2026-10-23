@@ -77,6 +77,7 @@ What `import` does:
 | `deckwright title <game.json> [--litnode <dir>]` | Build the LitNode ruleset; run the built-in (or LitNode's real) conformance checks |
 | `deckwright web <game.json> [--collection <cards.json>]` | Build the static site's engine, data and art |
 | `deckwright dev` | Serve the site locally, with production headers |
+| `deckwright replay <link \| code \| record.json>` | Replay a shared match and print its result, scores and final-state digest |
 | `TCG_DEV=1 TCG_GAME=<game.json> deckwright relay` | Two-player relay. Open the site twice with `?relay=ws://127.0.0.1:7830&name=alice` and `&name=bob`. It reads champion stats from the chain (`TCG_CHAIN=off` to skip); `TCG_OWNED=1` enforces owned-only decks |
 
 ## How a match works
@@ -104,6 +105,11 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 - The relay also reads each champion's stats on chain and ignores what the client claims. A player with no champion fights with base stats (all 0), as LitNode hydrates them.
 
 **Mechanics:** seven keywords (guard, haste, rush, lifesteal, shield, poison, elusive); abilities that fire on play, death, turn start or attack; seven effect ops with chosen or automatic targets; hero powers per champion (by element, kind or highest stat). `import` gives a collection all of these through its design kit, and `sim` checks balance and fun targets.
+
+**Replays and spectators.** A match is fully described by its record: the ruleset, the seed, the players, their champions and the input log. That is what LitNode replays.
+- **Share replay** turns a finished match into a link. The record rides in the URL fragment (`#replay=…`), so no server stores it, and anyone with the link watches the match move by move.
+- `deckwright replay "<link>"` replays a link from the command line and prints the result.
+- Spectators join a relay match with `?relay=<ws url>&watch=1`. They see every move and can't act. `TCG_WATCH_DELAY_MS` delays them, and is 2 minutes in ranked by default.
 
 **Not in v1:**
 - hidden hands (the duel is open-information);

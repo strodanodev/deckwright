@@ -2,6 +2,28 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.5.0 (2026-10-24): replays and spectators
+
+No rules change: every ruleset replays exactly as before.
+
+**Replays**
+- Match records (`src/client/replay.ts`): the ruleset, seed, players, hydrated champions and input log. That is exactly what LitNode replays, so a record is also proof of a result.
+- Share links: the record is compressed into the URL fragment (`#replay=…`), which browsers never send to a server.
+- Every session has `record()`. The new `ReplaySession` rebuilds every state with the same rules and moves by move or by turn.
+- Links are untrusted input: sizes are capped, shapes are checked, stats are normalized, and a record from another ruleset is refused.
+- `deckwright replay <link | code | record.json>` prints a match's result, scores and a final-state digest. `--out` saves the record.
+
+**Spectators**
+- The relay accepts `{ t: 'watch' }`: a spectator gets the log so far, then every new entry, and can't act.
+- `TCG_SPECTATORS` caps spectators (default 64; 0 turns watching off).
+- `TCG_WATCH_DELAY_MS` holds entries back from spectators (default 0, or 2 minutes in ranked) against live coaching.
+- A LitNode node's gateway forwards any connection for a room, so watching works for placed matches too.
+
+**Site**
+- Results have Watch replay and Share replay.
+- Two-player matches have Copy watch link; `?relay=…&watch=1` opens the spectator view.
+- A replay bar: play or pause, move by move or by turn (arrow keys and space), a scrubber, flip view and copy link.
+
 ## 0.4.0 (2026-10-24): the fun pass
 
 **Rules**

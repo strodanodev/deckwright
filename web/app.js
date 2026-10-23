@@ -1,9 +1,10 @@
 // Deckwright — the demo duel: a collection's cards as champions and units, played in the Deckwright rules
 // (engine/deckwright.js, built by `pnpm web`). The rules here are the same code the match relay and the LitNode
 // ruleset run, so a match replays identically everywhere. Practice is against the house bot;
-// ?relay=ws://127.0.0.1:7830&name=alice joins a dev relay (`TCG_DEV=1 pnpm relay`).
+// ?relay=ws://127.0.0.1:7830&name=alice joins a dev relay (`TCG_DEV=1 pnpm relay`); add &watch=1 to spectate it.
+// #replay=<code> replays a shared match: the code is the whole match record, rebuilt here with the same rules.
 // Every name on the page goes in through textContent.
-import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore, describeCard, describeEffect, KEYWORDS } from "./engine/deckwright.js";
+import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ReplaySession, encodeRecord, decodeRecord, REPLAY_PARAM, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore, describeCard, describeEffect, KEYWORDS } from "./engine/deckwright.js";
 import { createWallet } from "./lib/wallet.js";
 import { createHoldings } from "./lib/holdings.js";
 import { shortAddress } from "./lib/util.js";
@@ -12,6 +13,7 @@ const GAME_URL = "./data/game.json";
 const SNAPSHOT_URL = "./data/collection.json";
 const q = new URLSearchParams(location.search);
 const RELAY = q.get("relay");
+const WATCH = !!RELAY && q.get("watch") === "1";
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; };
@@ -201,13 +203,141 @@ function beginMatch(champion, declaredDeck) {
   $("mode").textContent = RELAY ? "Dev relay" : "Practice vs bot";
   pick = null; prev = null; recent = [];
   session.onChange(render);
-  $("pick").hidden = true; $("result").hidden = true; $("board").hidden = false;
-  if ($("build")) $("build").hidden = true;
+  showBoard(); setViewMode(null);
+  $("watch-link").hidden = !RELAY;
   if (declaredDeck) session.declareDeck(declaredDeck);
   render();
 }
 
 const act = (x) => { pick = null; session.act(x); };
+
+// ------------------------------------------------------------------ replays and spectators
+// A replay link carries the whole match record in its #fragment, which the browser never sends to a server, and
+// this page rebuilds every state from it with the same rules. ?relay=…&watch=1 watches a live match without a seat.
+const viewing = () => !!session && session.role !== "player";
+const replaying = () => session?.role === "replay";
+const shortId = (id) => (/^[0-9a-f]{64}$/i.test(id) ? `${id.slice(0, 6)}\u2026${id.slice(-4)}` : id);
+const playerName = (id) => (id === "you" ? "Player" : id === "bot" ? "House bot" : shortId(String(id)));
+const champOf = (id) => byToken.get(String(session?.champions?.[id]?.tokenId)) ?? null;
+const replayUrl = (code) => `${location.origin}${location.pathname}#${REPLAY_PARAM}=${code}`;
+const watchUrl = () => `${location.origin}${location.pathname}?relay=${encodeURIComponent(RELAY)}&watch=1`;
+let shareCode = null;   // the code of the replay on screen
+
+function showBoard() {
+  for (const id of ["pick", "deck", "result", "share"]) $(id).hidden = true;
+  if ($("build")) $("build").hidden = true;
+  $("notice").hidden = true;
+  $("board").hidden = false;
+}
+/** null while playing; "replay" or "live" while watching (replaces End turn / Concede with the view bar). */
+function setViewMode(kind) {
+  $("viewbar").hidden = !kind;
+  $("viewbar").classList.toggle("live", kind === "live");
+  $("play-controls").hidden = !!kind;
+  $("vb-share").textContent = kind === "live" ? "Copy watch link" : "Copy link";
+}
+function exitView() {
+  session?.close(); session = null;
+  // A spectator URL would rejoin the relay on reload: leave it for the plain page.
+  if (WATCH) { location.assign(location.pathname); return; }
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  setViewMode(null);
+  $("result").hidden = true; $("board").hidden = true; $("pick").hidden = false;
+  if ($("build")) $("build").hidden = false;
+}
+function showNotice(text) {
+  exitView();
+  $("notice").textContent = text;
+  $("notice").hidden = false;
+}
+async function copyText(text, button, label) {
+  try { await navigator.clipboard.writeText(text); button.textContent = "Copied"; }
+  catch { button.textContent = "Select it"; }
+  setTimeout(() => { button.textContent = label; }, 1600);
+}
+
+function startReplay(record, code) {
+  let next;
+  try { next = new ReplaySession(rules, record); }
+  catch (e) { showNotice(`Can't play this replay: ${e.message}.`); return; }
+  session?.close();
+  session = next; shareCode = code;
+  mine = null; foeChamp = null; pick = null; prev = null; recent = [];
+  $("mode").textContent = "Replay";
+  session.onChange(render);
+  showBoard(); setViewMode("replay");
+  render();
+}
+async function loadReplayFromHash() {
+  const m = new RegExp(`^#${REPLAY_PARAM}=([A-Za-z0-9_-]+)$`).exec(location.hash);
+  if (!m) return;
+  try { startReplay(await decodeRecord(m[1]), m[1]); }
+  catch (e) { showNotice(`Couldn't open that replay link: ${e.message}.`); }
+}
+function startWatching() {
+  session = RelaySession.watch(rules, RELAY);
+  mine = null; foeChamp = null; pick = null; prev = null; recent = [];
+  $("mode").textContent = "Spectating";
+  session.onChange(render);
+  showBoard(); setViewMode("live");
+  render();
+}
+
+function renderViewbar(s) {
+  if (!replaying()) { $("vb-pos").textContent = session?.status ?? ""; return; }
+  const r = session;
+  $("vb-scrub").max = String(r.length);
+  $("vb-scrub").value = String(r.cursor);
+  $("vb-pos").textContent = s.phase === "decks" ? `deck building \u00b7 move ${r.cursor}/${r.length}` : `turn ${s.turnNo} \u00b7 move ${r.cursor}/${r.length}`;
+  $("vb-play").textContent = r.playing ? "Pause" : r.cursor >= r.length ? "Replay" : "Play";
+  $("vb-play").setAttribute("aria-label", r.playing ? "Pause" : "Play");
+  $("vb-start").disabled = $("vb-prev").disabled = $("vb-prev-turn").disabled = r.cursor <= 0;
+  $("vb-end").disabled = $("vb-next").disabled = $("vb-next-turn").disabled = r.cursor >= r.length;
+}
+
+const stepTo = (k) => { if (!replaying()) return; session.pause(); session.seek(k); };
+$("vb-start").addEventListener("click", () => stepTo(session.cursor > session.playStart ? session.playStart : 0));
+$("vb-prev").addEventListener("click", () => stepTo(session.cursor - 1));
+$("vb-next").addEventListener("click", () => stepTo(session.cursor + 1));
+$("vb-prev-turn").addEventListener("click", () => stepTo(session.turnStart(session.cursor, -1)));
+$("vb-next-turn").addEventListener("click", () => stepTo(session.turnStart(session.cursor, 1)));
+$("vb-end").addEventListener("click", () => stepTo(session.length));
+$("vb-play").addEventListener("click", () => { if (replaying()) { if (session.playing) session.pause(); else session.play(); } });
+$("vb-scrub").addEventListener("input", (e) => stepTo(Number(e.target.value)));
+$("vb-flip").addEventListener("click", () => {
+  if (replaying()) { session.flip(); return; }
+  const ids = session?.state?.p.map((p) => p.id);
+  if (ids) { session.you = ids.find((id) => id !== session.you); prev = null; render(); }
+});
+$("vb-share").addEventListener("click", async (e) => {
+  const b = e.currentTarget;
+  if (!replaying()) { await copyText(watchUrl(), b, "Copy watch link"); return; }
+  await copyText(replayUrl(shareCode ?? await encodeRecord(session.record())), b, "Copy link");
+});
+$("vb-exit").addEventListener("click", exitView);
+$("watch-link").addEventListener("click", (e) => copyText(watchUrl(), e.currentTarget, "Copy watch link"));
+document.addEventListener("keydown", (e) => {
+  if (!replaying() || e.target instanceof HTMLInputElement) return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); stepTo(session.cursor - 1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); stepTo(session.cursor + 1); }
+  else if (e.key === " ") { e.preventDefault(); $("vb-play").click(); }
+});
+
+$("watch-replay").addEventListener("click", async () => {
+  const rec = session?.record();
+  if (!rec) return;
+  const code = await encodeRecord(rec);
+  history.replaceState(null, "", `${location.pathname}${location.search}#${REPLAY_PARAM}=${code}`);
+  startReplay(rec, code);
+});
+$("share-replay").addEventListener("click", async () => {
+  const rec = session?.record();
+  if (!rec) return;
+  $("share-url").value = replayUrl(await encodeRecord(rec));
+  $("share").hidden = false;
+  $("share-url").select();
+});
+$("share-copy").addEventListener("click", (e) => copyText($("share-url").value, e.currentTarget, "Copy"));
 
 // Card text comes from the rules library (core/effects.ts), so a new effect or keyword needs no client change.
 const nameOf = (id) => game.cards.find((c) => c.id === id)?.name ?? id;
@@ -286,46 +416,57 @@ function narrate(before, s, meIdx) {
   if (!before || !x) return;
   const { op, a, target } = decode(x);
   const actor = before.turn, P = before.p[actor], E = before.p[actor === 0 ? 1 : 0];
-  const who = actor === meIdx ? "You" : "Opponent";
+  const watching = viewing();
+  const who = watching ? playerName(P.id) : actor === meIdx ? "You" : "Opponent";
   const card = (c) => game.cards[c]?.name ?? "a card";
-  const tgt = () => (target === ENEMY_CHAMPION ? (actor === meIdx ? "the enemy champion" : "your champion") : target < 10 ? card(E.board[target - 1]?.c) : target === 10 ? "" : card(P.board[target - 11]?.c));
+  const enemyChampion = watching ? `${playerName(E.id)}'s champion` : actor === meIdx ? "the enemy champion" : "your champion";
+  const tgt = () => (target === ENEMY_CHAMPION ? enemyChampion : target < 10 ? card(E.board[target - 1]?.c) : target === 10 ? "" : card(P.board[target - 11]?.c));
   let line = "";
   if (op === Op.Play) line = `${who} played ${card(P.hand[a])}${target ? ` → ${tgt()}` : ""}`;
   else if (op === Op.Power) line = `${who} used ${game.champion.powers?.[P.power]?.name ?? "a power"}${target ? ` → ${tgt()}` : ""}`;
   else if (op === Op.Attack) line = `${who}: ${card(P.board[a]?.c)} attacked ${tgt()}`;
   else if (op === Op.End) line = `${who} ended the turn`;
-  else if (op === Op.Concede) line = `${s.winner === meIdx ? "Opponent" : "You"} conceded`;
+  else if (op === Op.Concede) line = watching ? `${playerName(s.p[s.winner === 0 ? 1 : 0].id)} conceded` : `${s.winner === meIdx ? "Opponent" : "You"} conceded`;
   if (line) recent = [...recent, line].slice(-3);
 }
 
 function render() {
   const s = session?.state;
-  if (!s) { $("status").textContent = session?.status ?? ""; return; }
+  if (!s) { $("status").textContent = session?.status ?? ""; renderViewbar(null); return; }
+  const watching = viewing();
   if (s.phase === "decks") {
     // Two-player: waiting for both declarations (the relay fills a missing deck with the suggested one at its deadline).
     for (const id of ["foe-hero", "my-hero", "foe-relics", "my-relics", "foe-lane", "my-lane", "hand"]) $(id).replaceChildren();
     const meIdx = s.p[0].id === session.you ? 0 : 1;
-    $("status").textContent = `Declaring decks \u00b7 you ${s.decl[meIdx].length}/${DECK.size} \u00b7 opponent ${s.decl[1 - meIdx].length}/${DECK.size}`;
+    const [a, b] = watching ? [playerName(s.p[meIdx].id), playerName(s.p[1 - meIdx].id)] : ["you", "opponent"];
+    $("status").textContent = `Declaring decks \u00b7 ${a} ${s.decl[meIdx].length}/${DECK.size} \u00b7 ${b} ${s.decl[1 - meIdx].length}/${DECK.size}`;
     $("end").disabled = true;
+    renderViewbar(s);
     return;
   }
   const meIdx = s.p[0].id === session.you ? 0 : 1;
   const me = s.p[meIdx], foe = s.p[meIdx === 0 ? 1 : 0];
-  if (s !== prev) narrate(prev, s, meIdx);   // a re-render for a pick is not a new action
-  const hurtMe = prev && prev.p[meIdx].life > me.life, hurtFoe = prev && prev.p[meIdx === 0 ? 1 : 0].life > foe.life;
+  // A replay can jump anywhere: compare with the state just before the cursor, and narrate the last few moves.
+  const before = replaying() ? session.states[session.cursor - 1] ?? null : prev;
+  if (replaying()) {
+    recent = [];
+    for (let k = Math.max(session.playStart + 1, session.cursor - 2); k <= session.cursor; k++) narrate(session.states[k - 1], session.states[k], meIdx);
+  } else if (s !== prev) narrate(prev, s, meIdx);   // a re-render for a pick is not a new action
+  const sameView = before && before.p[meIdx].id === me.id;
+  const hurtMe = sameView && before.p[meIdx].life > me.life, hurtFoe = sameView && before.p[meIdx === 0 ? 1 : 0].life > foe.life;
   prev = s;
-  const myTurn = !s.over && s.turn === meIdx;
+  const myTurn = !watching && !s.over && s.turn === meIdx;
   const legal = myTurn ? rules.legalActions(s) : [];
   const moves = legal.map((x) => ({ x, ...decode(x) }));
   const targets = new Map();   // target code -> action, for the current pick
   const pickOp = { hand: Op.Play, unit: Op.Attack, power: Op.Power };
   if (pick) for (const m of moves) if (m.op === pickOp[pick.kind] && m.a === pick.index) targets.set(m.target, m.x);
 
-  if (RELAY && !foeChamp) foeChamp = byToken.get(String(session.champions?.[foe.id]?.tokenId)) ?? null;
-  const foeHero = heroEl(foe, foeChamp, RELAY ? "Opponent" : "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null, powerEl(foe, moves, false));
+  if (RELAY && !watching && !foeChamp) foeChamp = byToken.get(String(session.champions?.[foe.id]?.tokenId)) ?? null;
+  const foeHero = heroEl(foe, watching ? champOf(foe.id) : foeChamp, watching ? playerName(foe.id) : RELAY ? "Opponent" : "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null, powerEl(foe, moves, false));
   $("foe-hero").replaceChildren(...foeHero.childNodes);
   $("foe-hero").dataset.el = foeHero.dataset.el;
-  const myHero = heroEl(me, mine, "You", hurtMe, null, powerEl(me, moves, true));
+  const myHero = heroEl(me, watching ? champOf(me.id) : mine, watching ? playerName(me.id) : "You", hurtMe, null, powerEl(me, moves, true));
   $("my-hero").replaceChildren(...myHero.childNodes);
   $("my-hero").dataset.el = myHero.dataset.el;
 
@@ -354,6 +495,7 @@ function render() {
     const def = game.cards[c];
     const b = cardEl(def);
     const plays = moves.filter((m) => m.op === Op.Play && m.a === index);
+    if (watching) return b;   // spectators and replays see the hand (open information) but don't play it
     if (!plays.length) { b.classList.add("dead"); return b; }
     b.classList.add("can");
     if (pick?.kind === "hand" && pick.index === index) b.classList.add("picked");
@@ -372,14 +514,25 @@ function render() {
   const hint = !myTurn ? "" : pick?.kind === "hand" ? `choose a target for ${game.cards[me.hand[pick.index]]?.name}` : pick?.kind === "power" ? "choose a target for your hero power" : pick?.kind === "unit" ? "choose what to attack" : "play cards, attack, use your hero power, or end the turn";
   const status = $("status");
   status.replaceChildren();
-  status.append(el("b", null, s.over ? "Match over" : myTurn ? "Your turn" : "Opponent's turn"), ` · turn ${s.turnNo}${hint ? ` · ${hint}` : ""}`);
+  const outcome = s.winner === 2 ? "a draw" : s.winner >= 0 ? `${playerName(s.p[s.winner].id)} won` : "";
+  const headline = watching
+    ? (s.over ? `Match over \u00b7 ${outcome}` : `${playerName(s.p[s.turn].id)}'s turn`)
+    : (s.over ? "Match over" : myTurn ? "Your turn" : "Opponent's turn");
+  status.append(el("b", null, headline), ` · turn ${s.turnNo}${hint ? ` · ${hint}` : ""}`);
   if (recent.length) status.append(el("br"), recent.join(" · "));
-  if (session.status && !/^practice|^live$/.test(session.status)) status.append(el("br"), session.status);
+  if (!replaying() && session.status && !/^practice|^live$|^watching/.test(session.status)) status.append(el("br"), session.status);
+  renderViewbar(s);
 
-  if (s.over) {
-    $("result-title").textContent = s.winner === 2 ? "Draw" : s.winner === meIdx ? "Victory" : "Defeat";
-    $("result-sub").textContent = `${s.turnNo} turns · ${me.life} life left${RELAY ? ` · ${session.status}` : ""}`;
+  // Players and spectators get the result card; a replay just stops on its last move.
+  if (s.over && !replaying() && $("result").hidden) {
+    $("result-title").textContent = watching ? (s.winner === 2 ? "Draw" : `${playerName(s.p[s.winner].id)} wins`) : s.winner === 2 ? "Draw" : s.winner === meIdx ? "Victory" : "Defeat";
+    $("result-sub").textContent = `${s.turnNo} turns · ${watching ? `${playerName(me.id)} ${me.life} life · ${playerName(foe.id)} ${foe.life} life` : `${me.life} life left`}${RELAY && !watching ? ` · ${session.status}` : ""}`;
+    $("again").hidden = watching;
+    $("change").textContent = watching ? "Exit" : "New champion";
+    $("share").hidden = true;
     $("result").hidden = false;
+  } else if (s.over && !replaying() && RELAY && !watching) {
+    $("result-sub").textContent = `${s.turnNo} turns · ${me.life} life left · ${session.status}`;   // settlement status updates
   }
 }
 
@@ -393,7 +546,7 @@ $("concede").addEventListener("click", () => {
   concedeArmed = setTimeout(() => { concedeArmed = null; b.textContent = "Concede"; }, 3000);
 });
 $("again").addEventListener("click", () => (lastDeck ? beginMatch(mine, lastDeck) : start(mine)));
-$("change").addEventListener("click", () => { session?.close(); session = null; lastDeck = null; $("result").hidden = true; $("board").hidden = true; $("pick").hidden = false; if ($("build")) $("build").hidden = false; });
+$("change").addEventListener("click", () => { lastDeck = null; exitView(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pick) { pick = null; render(); } });
 
 // "Build your own" copy buttons (demo site only; the section is not in scaffolded games).
@@ -407,3 +560,7 @@ for (const b of document.querySelectorAll("[data-copy]")) {
 
 renderChampions();
 void refreshOwned();
+// A replay fragment wins over ?watch=1: "Watch replay" from the spectator view keeps the relay query in the URL.
+if (location.hash.startsWith(`#${REPLAY_PARAM}=`)) void loadReplayFromHash();
+else if (WATCH) startWatching();
+window.addEventListener("hashchange", () => { void loadReplayFromHash(); });

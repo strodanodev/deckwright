@@ -141,6 +141,8 @@ TCG_DEV=1 TCG_GAME=games/<id>.game.json npx deckwright relay     # ws://127.0.0.
 Open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&name=alice` and `…&name=bob` in two tabs. Pick champions; with wallet decks, build or suggest a deck. Play a turn in each tab.
 - The relay reads champion stats from the chain, never from the page. With no network, add `TCG_CHAIN=off`: champions then fight with base stats.
 - **Owned-only test:** add `TCG_OWNED=1` to the relay and `&owned=1` to both URLs, and connect a wallet. The relay rejects collection cards that wallet doesn't hold.
+- **Spectate:** open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&watch=1` in a third tab (players also get a Copy watch link button). Spectators see every move and can't act; `TCG_WATCH_DELAY_MS` delays them.
+- **Replays:** at the end of any match, Share replay gives a link with the whole match in its `#replay=` fragment. `npx deckwright replay "<link>"` prints the result the link replays to, which is the way to check a disputed match.
 
 ## 8. Deliver
 

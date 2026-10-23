@@ -13,6 +13,7 @@ const COMMANDS: Record<string, [() => Promise<unknown>, string]> = {
   title: [() => import('./tools/build-title'), 'LitNode ruleset + compatibility check    title <game.json> [--litnode <dir>]'],
   web: [() => import('./tools/build-web'), 'build the static site                    web <game.json> [--collection <cards.json>]'],
   dev: [() => import('./tools/serve'), 'serve the site locally                   dev [--port 4173]'],
+  replay: [() => import('./tools/replay'), 'check a shared match and print its result replay <link | code | record.json>'],
   relay: [() => import('./tools/relay'), 'two-player match relay                   TCG_DEV=1 TCG_GAME=<game.json> deckwright relay'],
 };
 

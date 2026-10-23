@@ -19,6 +19,11 @@
  * player's wallet; support cards (no token) are always allowed. LitNode's replay cannot read the chain, so this
  * server is the only place deck ownership is enforced.
  *
+ * Spectators: a connection that says `{ t: 'watch' }` instead of `hello` gets the log so far and every later entry,
+ * and can't act. TCG_SPECTATORS caps them (default 64; 0 turns watching off). TCG_WATCH_DELAY_MS holds entries back
+ * from spectators (default 0, or 2 minutes for ranked) so nobody can coach a player from a live view. A node's
+ * gateway forwards any connection for the room, so this works for placed matches as well as dev ones.
+ *
  * Dev mode (TCG_DEV=1, no LitNode): no tickets, players name themselves in `hello` and may name a `wallet`
  * (unproven), no ledger post. Champion stats still come from the chain unless TCG_CHAIN=off.
  *   TCG_DEV=1 TCG_GAME=games/my-duel.game.json deckwright relay
@@ -49,6 +54,8 @@ const MODE = env.GAUNTLET_PLACED_MODE ?? 'casual';
 const TURN_MS = Number(env.TCG_TURN_MS ?? 60_000);
 const DECK_MS = Number(env.TCG_DECK_MS ?? 90_000);
 const DISCONNECT_MS = Number(env.TCG_DISCONNECT_MS ?? 30_000);
+const MAX_WATCHERS = Number(env.TCG_SPECTATORS ?? 64);
+const WATCH_DELAY_MS = Number(env.TCG_WATCH_DELAY_MS ?? (MODE === 'ranked' ? 120_000 : 0));
 const SIGN_MS = Number(env.TCG_SIGN_MS ?? 60_000);
 const seats: Array<{ sub: string }> = env.GAUNTLET_SEATS ? JSON.parse(env.GAUNTLET_SEATS) : [];
 if (!DEV && (!SECRET || seats.length !== 2 || !MATCH_ID)) throw new Error('gauntlet env missing: GAUNTLET_SECRET, GAUNTLET_SEATS (2 seats), GAUNTLET_MATCH_ID');
@@ -143,9 +150,18 @@ let turnTimer: ReturnType<typeof setTimeout> | null = null;
 let ended = false;
 
 const broadcast = (msg: unknown): void => { for (const s of table) s.peer?.send(msg); };
+// Spectators see the log `WATCH_DELAY_MS` late: `released` entries have reached them so far, in order.
+const watchers = new Set<Peer>();
+let released = 0;
+const toWatchers = (msg: unknown): void => { for (const w of watchers) w.send(msg); };
+const toWatchersLater = (msg: unknown, before?: () => void): void => {
+  const go = (): void => { before?.(); toWatchers(msg); };
+  if (WATCH_DELAY_MS > 0) setTimeout(go, WATCH_DELAY_MS).unref(); else go();
+};
 // The same ctx the clients build from `start` and LitNode hydrates: stats, plus the token id that picks the hero power.
 const ctx = (): { agents: Record<string, { stats: AgentStats; tokenId?: string }> } => ({ agents: Object.fromEntries(table.map((s) => [s.id, { stats: s.stats, ...(s.tokenId ? { tokenId: s.tokenId } : {}) }])) });
 const startMsg = (): unknown => ({ t: 'start', matchId: MATCH_ID, rulesetId: game.litnode.rulesetId, buildHash: BUILD, seed: SEED, participants: table.map((s) => s.id), champions: Object.fromEntries(table.map((s) => [s.id, { tokenId: s.tokenId, stats: s.stats }])), ownedOnly: OWNED, entries });
+const watchStartMsg = (): unknown => ({ ...(startMsg() as object), entries: entries.slice(0, released), spectators: watchers.size, delayMs: WATCH_DELAY_MS });
 
 function record(side: 0 | 1, x: number): void {
   if (!state || state.over) return;
@@ -154,6 +170,7 @@ function record(side: 0 | 1, x: number): void {
   entries.push(entry);
   state = rules.step(state, { [table[0].id]: inputs[0], [table[1].id]: inputs[1] });
   broadcast({ t: 'entry', entry });
+  toWatchersLater({ t: 'entry', entry }, () => { released++; });
   armTurnClock();
   if (rules.done(state)) void finish();
 }
@@ -228,6 +245,7 @@ async function maybeStart(): Promise<void> {
   state = rules.init(SEED, table.map((s) => s.id), ctx());
   log(`start: ${table.map((s) => s.id.slice(0, 8)).join(' vs ')}`);
   broadcast(startMsg());
+  toWatchers(watchStartMsg());
   armTurnClock();
 }
 
@@ -247,15 +265,28 @@ async function finish(): Promise<void> {
     const delta = await r.json();
     log(`ledger ${r.status}: ${r.ok ? 'settled' : delta.error}`);
     broadcast(r.ok ? { t: 'settled', delta } : { t: 'error', message: delta.error ?? `ledger ${r.status}` });
+    if (r.ok) toWatchersLater({ t: 'settled', delta });
   } catch (e) {
     broadcast({ t: 'error', message: `ledger: ${(e as Error).message}` });
   }
-  setTimeout(() => process.exit(0), 5000).unref();
+  setTimeout(() => process.exit(0), 5000 + WATCH_DELAY_MS).unref(); // spectators get the delayed end too
 }
 
-function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) => void): void {
+interface Conn { seat: Seat | null; watching: boolean }
+
+function onMessage(conn: Conn, peer: Peer, raw: string): void {
   let m: { t?: string; ticket?: string; player?: string; wallet?: string; champion?: { tokenId?: string }; x?: number; sig?: string };
   try { m = JSON.parse(raw); } catch { return; }
+  if (conn.watching) return; // spectators only listen
+  if (m.t === 'watch' && !conn.seat) {
+    if (watchers.size >= MAX_WATCHERS) { peer.send({ t: 'error', message: MAX_WATCHERS ? 'this match is full of spectators' : 'this match has no spectators' }); peer.close(); return; }
+    conn.watching = true;
+    watchers.add(peer);
+    peer.send({ t: 'watching', delayMs: WATCH_DELAY_MS });
+    if (state) peer.send(watchStartMsg());
+    return;
+  }
+  const seat = conn.seat;
   if (m.t === 'hello') {
     const id = DEV ? String(m.player ?? '') : verifyTicket(m.ticket)?.sub;
     let s = table.find((x) => x.id === id);
@@ -265,7 +296,7 @@ function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) =
     s.peer = peer; s.goneAt = null;
     // Only the champion's token id is taken from the client; its stats come from the chain (verifySeat).
     if (!state && !s.ready) s.ready = verifySeat(s, m.champion, m.wallet);
-    bind(s);
+    conn.seat = s;
     peer.send({ t: 'seated', you: s.id, waiting: table.filter((x) => !x.peer).length + (2 - table.length) });
     if (state) peer.send(startMsg()); else void maybeStart();
     return;
@@ -286,11 +317,13 @@ function onMessage(seat: Seat | null, peer: Peer, raw: string, bind: (s: Seat) =
 
 const server = createServer((req, res) => {
   res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
-  res.end(JSON.stringify({ game: game.litnode.rulesetId, matchId: MATCH_ID, seated: table.filter((s) => s.peer).length, entries: entries.length, over: state?.over ?? false }));
+  res.end(JSON.stringify({ game: game.litnode.rulesetId, matchId: MATCH_ID, seated: table.filter((s) => s.peer).length, spectators: watchers.size, entries: entries.length, over: state?.over ?? false }));
 });
 server.on('upgrade', (req, socket) => {
-  let seat: Seat | null = null;
-  const peer = accept(req, socket, (text) => onMessage(seat, peer, text, (s) => { seat = s; }), () => {
+  const conn: Conn = { seat: null, watching: false };
+  const peer = accept(req, socket, (text) => onMessage(conn, peer, text), () => {
+    if (conn.watching) { watchers.delete(peer); return; }
+    const seat = conn.seat;
     if (!seat || seat.peer !== peer) return;
     seat.peer = null; seat.goneAt = Date.now();
     const gone = seat;

@@ -3,6 +3,7 @@ import { greedyBot } from '../core/bot';
 import { normalizeStats } from '../core/champion';
 import type { Rules } from '../core/rules';
 import type { AgentStats, MatchState } from '../core/types';
+import { type MatchRecord, recordOf, replayStates } from './replay';
 import { type CabinetShell, connectShell, parseLaunch } from './shell';
 
 /**
@@ -20,6 +21,10 @@ export interface MatchSession {
   readonly champions: Record<string, Champion | undefined>;
   /** Owned-only match: the server accepts only collection cards the player's wallet holds (support cards are free). */
   readonly ownedOnly: boolean;
+  /** 'player' acts; 'spectator' watches a live match; 'replay' steps through a recorded one. Only players act. */
+  readonly role: 'player' | 'spectator' | 'replay';
+  /** The match so far as a replayable record (null before it starts): the share-link payload. */
+  record(): MatchRecord | null;
   onChange(cb: () => void): void;
   act(x: number): void;
   /** Declared-deck games: declare this deck (card indices). Sessions without a deck phase ignore it. */
@@ -39,18 +44,25 @@ abstract class BaseSession implements MatchSession {
   public status = 'connecting…';
   public champions: Record<string, Champion | undefined> = {};
   public ownedOnly = false;
+  public role: MatchSession['role'] = 'player';
   protected readonly listeners: Array<() => void> = [];
   protected participants: string[] = [];
   protected readonly entries: Entry[] = [];
+  private seed = '';
+  private agents: MatchRecord['agents'] = {};
 
   protected constructor(public readonly rules: Rules, public you: string) {}
+
+  public record(): MatchRecord | null { return this.state ? recordOf(this.rules, this.seed, this.participants, this.agents, this.entries) : null; }
 
   public onChange(cb: () => void): void { this.listeners.push(cb); }
   protected changed(status?: string): void { if (status !== undefined) this.status = status; for (const cb of this.listeners) cb(); }
 
   protected begin(seed: string, participants: string[], agents: Record<string, AgentClaim | undefined>): void {
     this.participants = participants;
-    this.state = this.rules.init(seed, participants, { agents: Object.fromEntries(participants.map((p) => [p, { stats: normalizeStats(agents[p]?.stats), ...(agents[p]?.tokenId ? { tokenId: String(agents[p]!.tokenId) } : {}) }])) });
+    this.seed = seed;
+    this.agents = Object.fromEntries(participants.map((p) => [p, { stats: normalizeStats(agents[p]?.stats), ...(agents[p]?.tokenId ? { tokenId: String(agents[p]!.tokenId) } : {}) }]));
+    this.state = this.rules.init(seed, participants, { agents: this.agents });
   }
 
   protected apply(entry: Entry): void {
@@ -135,6 +147,18 @@ export class RelaySession extends BaseSession {
     return s;
   }
 
+  /**
+   * Watch a live match: no seat, no actions. The relay sends the log so far, then every entry (after its
+   * spectator delay, if it has one). Works the same through a LitNode node's gateway (`wss://<wsAddr>/<room>`).
+   */
+  public static watch(rules: Rules, url: string): RelaySession {
+    const s = new RelaySession(rules, '', null);
+    s.role = 'spectator';
+    s.status = 'joining as a spectator…';
+    s.open(url, { t: 'watch' });
+    return s;
+  }
+
   /** A match the LitNode mesh placed: claim the seat with the arcade's signature, then join. */
   public static async placed(rules: Rules, champion?: Champion): Promise<RelaySession> {
     const launch = parseLaunch();
@@ -165,6 +189,11 @@ export class RelaySession extends BaseSession {
 
   private async onServer(m: { t: string; [k: string]: unknown }): Promise<void> {
     switch (m.t) {
+      case 'watching': {
+        const delay = Number(m.delayMs) || 0;
+        this.changed(`spectating${delay ? ` on a ${Math.round(delay / 1000)} s delay` : ''}: waiting for the match…`);
+        break;
+      }
       case 'seated':
         this.you = String(m.you);
         this.changed(Number(m.waiting) > 0 ? 'waiting for opponent…' : 'starting…');
@@ -175,9 +204,10 @@ export class RelaySession extends BaseSession {
         const participants = m.participants as string[];
         this.champions = Object.fromEntries(participants.map((p) => [p, champions[p]?.tokenId ? { tokenId: String(champions[p].tokenId), stats: champions[p].stats ?? {} } : undefined]));
         this.ownedOnly = m.ownedOnly === true;
+        if (this.role === 'spectator') this.you = participants[0];
         this.begin(String(m.seed), participants, Object.fromEntries(participants.map((p) => [p, { stats: champions[p]?.stats, tokenId: champions[p]?.tokenId ?? undefined }])));
         for (const e of (m.entries as Entry[]) ?? []) this.apply(e);
-        this.changed('live');
+        this.changed(this.role === 'spectator' ? (Number(m.delayMs) ? `watching on a ${Math.round(Number(m.delayMs) / 1000)} s delay` : 'watching live') : 'live');
         if (this.pendingDeck) { const d = this.pendingDeck; this.pendingDeck = null; this.declareDeck(d); }
         break;
       }
@@ -193,6 +223,7 @@ export class RelaySession extends BaseSession {
         break;
       case 'sign': {
         // Sign the log THIS client recorded; the arcade recomputes the head from it.
+        if (this.role === 'spectator') { this.changed('match over'); break; }
         if (!this.shell) { this.changed('match over (dev: unsigned)'); break; }
         this.changed('signing the match ledger…');
         try {
@@ -213,7 +244,7 @@ export class RelaySession extends BaseSession {
     }
   }
 
-  public act(x: number): void { this.ws?.send(JSON.stringify({ t: 'act', x })); }
+  public act(x: number): void { if (this.role === 'player') this.ws?.send(JSON.stringify({ t: 'act', x })); }
 
   private pendingDeck: number[] | null = null;
   /** Sends one declaration per card; before the match starts, they wait for it. */
@@ -222,6 +253,71 @@ export class RelaySession extends BaseSession {
     if (this.state.phase === 'decks') for (const c of cards) this.act(declare(c));
   }
   public close(): void { this.ws?.close(); this.shell?.close(); }
+}
+
+/**
+ * Step through a recorded match: every state is rebuilt from the record with the same rules, so what you see is
+ * exactly what was played (and what LitNode would settle). Read-only; `seek` moves through the log.
+ */
+export class ReplaySession implements MatchSession {
+  public readonly role = 'replay' as const;
+  public readonly ownedOnly = false;
+  public readonly champions: Record<string, Champion | undefined>;
+  public readonly states: MatchState[];
+  /** Index of the first entry after the deck phase: where watching starts. */
+  public readonly playStart: number;
+  public you: string;
+  public cursor: number;
+  public status = 'replay';
+  private readonly listeners: Array<() => void> = [];
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(public readonly rules: Rules, private readonly rec: MatchRecord) {
+    this.states = replayStates(rules, rec);
+    this.champions = Object.fromEntries(rec.participants.map((p) => [p, rec.agents[p]?.tokenId ? { tokenId: rec.agents[p].tokenId!, stats: rec.agents[p].stats } : undefined]));
+    this.you = rec.participants[0];
+    this.playStart = Math.max(0, this.states.findIndex((s) => s.phase !== 'decks'));
+    this.cursor = this.playStart;
+  }
+
+  public get state(): MatchState { return this.states[this.cursor]; }
+  /** Entries in the log (the last state is `states[length]`). */
+  public get length(): number { return this.states.length - 1; }
+  public get playing(): boolean { return this.timer !== null; }
+  public record(): MatchRecord { return this.rec; }
+  public onChange(cb: () => void): void { this.listeners.push(cb); }
+  private changed(): void { for (const cb of this.listeners) cb(); }
+
+  public seek(k: number): void {
+    const next = Math.max(0, Math.min(this.length, Math.round(k)));
+    if (next === this.cursor) return;
+    this.cursor = next;
+    if (this.cursor >= this.length) this.pause();
+    this.changed();
+  }
+  /** The entry where the turn containing `k` (or the next one, dir 1) starts. */
+  public turnStart(k: number, dir: -1 | 1): number {
+    const turnAt = (i: number): number => this.states[i].turnNo;
+    if (dir > 0) { let i = k; while (i < this.length && turnAt(i) === turnAt(k)) i++; return i; }
+    let i = k;
+    if (i > this.playStart && turnAt(i - 1) !== turnAt(i)) i--; // already at a turn start: go to the previous one
+    while (i > this.playStart && turnAt(i - 1) === turnAt(i)) i--;
+    return i;
+  }
+  /** Flip which side is shown at the bottom. */
+  public flip(): void { this.you = this.rec.participants[this.you === this.rec.participants[0] ? 1 : 0]; this.changed(); }
+  public play(msPerEntry = 700): void {
+    this.pause();
+    if (this.cursor >= this.length) this.cursor = this.playStart;
+    this.timer = setInterval(() => this.seek(this.cursor + 1), msPerEntry);
+    this.changed();
+  }
+  public pause(): void { if (this.timer) { clearInterval(this.timer); this.timer = null; this.changed(); } }
+
+  public act(): void {}
+  public declareDeck(): void {}
+  public concede(): void {}
+  public close(): void { this.pause(); }
 }
 
 /**

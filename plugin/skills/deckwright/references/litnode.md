@@ -62,6 +62,12 @@ A result is *official* only with both players' signatures plus at least one co-s
   - Until one side moves, a node needs `ERC6699=0xBeEe…` and the client must queue with the twin id.
   - Set the relay's `TCG_STATS_CONTRACT` to the registry the node reads, so live and settled stats agree.
 
+## Spectators and replays
+
+- The node's gateway proxies every WebSocket for `wss://<wsAddr>/LIT-<room>` to the gauntlet, with no ticket check. Seats are checked by the relay's `hello`, so a `{ t: 'watch' }` connection spectates a placed match with no LitNode change.
+- Ranked spectators are delayed by 2 minutes by default (`TCG_WATCH_DELAY_MS`), and the relay waits for that delay before it exits.
+- A replay link's record has the same fields as the `/ledger` submission's replay inputs (seed, participants, hydrated agents, entries). `deckwright replay` reaches the same end as the node's sandbox replay. Its digest is a Deckwright fingerprint, not LitNode's `h('state', …)` root.
+
 ## Gaps and risks (v1)
 
 - **Draws can't be read ahead.** Each draw mixes the seed with the entropy of every accepted action up to that turn's start, so a draw is unknown until the opponent's previous turn is over. Mid-turn draws (draw spells) are knowable once the turn starts, but can't be steered.

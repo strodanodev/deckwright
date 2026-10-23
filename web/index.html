@@ -25,6 +25,7 @@
 
 <section id="pick" class="pick" aria-labelledby="pick-title">
   <p class="kicker">Web3 TCG game maker · demo game</p>
+  <p id="notice" class="notice" role="alert" hidden></p>
   <h2 id="pick-title">Choose your champion</h2>
   <p class="lede">Every <b id="collection-name">collection</b> card can fight. A champion's on-chain stats shape your side: <b>resilience</b> sets life, <b>intelligence</b> spell power, <b>strength</b> unit attack, <b>agility</b> your opening hand. Cards your wallet holds are marked; in practice any champion may fight.</p>
   <div class="pick-filter" role="group" aria-label="Show">
@@ -87,12 +88,31 @@
   <div class="row my-row">
     <div class="hero" id="my-hero"></div>
     <div class="relics" id="my-relics" aria-label="Your relics"></div>
-    <div class="controls">
+    <div class="controls" id="play-controls">
+      <button id="watch-link" class="ghost" type="button" hidden>Copy watch link</button>
       <button id="end" class="forge" type="button">End turn</button>
       <button id="concede" class="ghost" type="button">Concede</button>
     </div>
   </div>
   <div class="hand" id="hand" aria-label="Your hand"></div>
+  <div class="viewbar" id="viewbar" hidden>
+    <div class="vb-steps" id="vb-steps" role="group" aria-label="Replay controls">
+      <button type="button" class="ghost" id="vb-start" aria-label="Back to the start" title="Start">&#x23EE;</button>
+      <button type="button" class="ghost" id="vb-prev-turn" aria-label="Previous turn" title="Previous turn">&#x00AB;</button>
+      <button type="button" class="ghost" id="vb-prev" aria-label="Previous move" title="Previous move (&#x2190;)">&#x2039;</button>
+      <button type="button" class="forge" id="vb-play" aria-label="Play">Play</button>
+      <button type="button" class="ghost" id="vb-next" aria-label="Next move" title="Next move (&#x2192;)">&#x203A;</button>
+      <button type="button" class="ghost" id="vb-next-turn" aria-label="Next turn" title="Next turn">&#x00BB;</button>
+      <button type="button" class="ghost" id="vb-end" aria-label="Jump to the end" title="End">&#x23ED;</button>
+    </div>
+    <input type="range" id="vb-scrub" min="0" max="0" value="0" aria-label="Move in the match" />
+    <span class="vb-pos" id="vb-pos" aria-live="polite"></span>
+    <div class="vb-more">
+      <button type="button" class="ghost" id="vb-flip">Flip view</button>
+      <button type="button" class="ghost" id="vb-share">Copy link</button>
+      <button type="button" class="ghost" id="vb-exit">Exit</button>
+    </div>
+  </div>
 </section>
 
 <div id="result" class="result" hidden role="dialog" aria-modal="true" aria-labelledby="result-title">
@@ -101,7 +121,13 @@
     <p id="result-sub"></p>
     <div class="result-actions">
       <button id="again" class="forge" type="button">Rematch</button>
+      <button id="watch-replay" class="ghost" type="button">Watch replay</button>
+      <button id="share-replay" class="ghost" type="button">Share replay</button>
       <button id="change" class="ghost" type="button">New champion</button>
+    </div>
+    <div class="share" id="share" hidden>
+      <label for="share-url">Replay link: anyone with it can watch this match, move by move.</label>
+      <div class="share-row"><input id="share-url" type="text" readonly /><button id="share-copy" class="ghost" type="button">Copy</button></div>
     </div>
   </div>
 </div>
