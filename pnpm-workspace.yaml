@@ -1,0 +1,6 @@
+# pnpm 11+ reads project settings here, not package.json#pnpm.
+# esbuild's install script fetches its platform binary; unapproved build scripts fail CI (ERR_PNPM_IGNORED_BUILDS).
+allowBuilds:
+  esbuild: true
+# Don't nested-install on every `pnpm <script>`; `pnpm install` is run explicitly.
+verifyDepsBeforeRun: false
