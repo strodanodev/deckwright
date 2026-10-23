@@ -26,6 +26,16 @@
 <section id="pick" class="pick" aria-labelledby="pick-title">
   <p class="kicker">Web3 TCG game maker · demo game</p>
   <p id="notice" class="notice" role="alert" hidden></p>
+  <nav class="modes" id="modes" aria-label="Game modes">
+    <button type="button" data-mode="practice" aria-pressed="true">Practice</button>
+    <button type="button" data-mode="gauntlet" aria-pressed="false">Gauntlet</button>
+    <button type="button" data-mode="puzzle" aria-pressed="false">Daily puzzle</button>
+    <button type="button" data-mode="profile" aria-pressed="false">Profile</button>
+  </nav>
+  <div class="panel" id="gauntlet-panel" hidden aria-live="polite"></div>
+  <div class="panel" id="puzzle-panel" hidden aria-live="polite"></div>
+  <div class="panel" id="profile-panel" hidden></div>
+  <div id="pick-champs">
   <h2 id="pick-title">Choose your champion</h2>
   <p class="lede">Every <b id="collection-name">collection</b> card can fight. A champion's on-chain stats shape your side: <b>resilience</b> sets life, <b>intelligence</b> spell power, <b>strength</b> unit attack, <b>agility</b> your opening hand. Cards your wallet holds are marked; in practice any champion may fight.</p>
   <div class="pick-filter" role="group" aria-label="Show">
@@ -33,6 +43,7 @@
     <button type="button" data-filter="owned" aria-pressed="false">Held by me</button>
   </div>
   <div id="champions" class="champions"></div>
+  </div>
 </section>
 
 <!-- deckwright:funnel -->

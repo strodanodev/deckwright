@@ -2,6 +2,25 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.6.0 (2026-10-24): the meta loop
+
+No rules change: every ruleset replays exactly as before. Everything below runs in the browser, with no server.
+
+- **Profile** (`src/meta/profile.ts`):
+  - match history with replays, win rate, current and best streak, records per champion, Gauntlet bests, and the daily-puzzle streak;
+  - kept in local storage under the game's rulesetId without its version, so a profile survives balance patches.
+- **Gauntlet** (`src/meta/gauntlet.ts`):
+  - eight seeded bot matches, with rising opponent stats, rarer opponent decks, and easy, then normal, then hard bots;
+  - after each win you pick a reward: a card that replaces your weakest (declared-deck games), or a blessing of +12,000 to one champion stat;
+  - one loss ends the run.
+  - Tuned so a normal-bot player wins stages 3–7 about 50–75% of the time; the final boss is the wall.
+- **Daily puzzle** (`src/meta/puzzle.ts`):
+  - "win this turn" from the winner's final turn of a seeded bot match, so it's always solvable and the same for everyone on a UTC date;
+  - random playouts rate its difficulty;
+  - a solution is an ordinary match record.
+- **Bot levels:** `greedyBot(rules, { level: 1 | 2 | 3 })`. Easy is a seeded pick among its top three moves; hard looks one action deeper. Bot opponents can be given a deck (`LocalBotSession` `foeDeck`). New `PuzzleSession`.
+- **Site:** a mode bar (Practice, Gauntlet, Daily puzzle, Profile); finished matches go into the profile, with Watch buttons for their replays.
+
 ## 0.5.0 (2026-10-24): replays and spectators
 
 No rules change: every ruleset replays exactly as before.

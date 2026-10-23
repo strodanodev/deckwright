@@ -131,6 +131,11 @@ npx deckwright dev                                 # serves http://127.0.0.1:417
   - no inline `<script>` (the CSP blocks it), so logic stays in `web/app.js`;
   - card and collection names go in through `textContent` only, never `innerHTML`.
 - Re-run `deckwright web` after every game JSON change; it regenerates `web/engine`, `web/data` and the art.
+- The site's mode bar has **Practice**, **Gauntlet** (eight bot matches with rewards), **Daily puzzle** ("win this turn") and **Profile** (history, streaks, replays). They work for any game with no extra config.
+  - Check that today's puzzle loads.
+  - Check that a Gauntlet run starts.
+  - Card swaps in the Gauntlet need `deckRules.mode: "declared"`. Fixed-deck games get blessings only.
+  - The screens are in `web/meta.js`; the logic is in `src/meta`.
 
 ## 7. Two players (optional check)
 

@@ -106,6 +106,12 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 
 **Mechanics:** seven keywords (guard, haste, rush, lifesteal, shield, poison, elusive); abilities that fire on play, death, turn start or attack; seven effect ops with chosen or automatic targets; hero powers per champion (by element, kind or highest stat). `import` gives a collection all of these through its design kit, and `sim` checks balance and fun targets.
 
+**The meta loop** (all offline, in the browser):
+- **Profile:** wins, streaks, a record per champion, and recent matches with their replays. It's kept in the browser's local storage.
+- **Gauntlet:** eight bot matches of rising difficulty. Win and pick a reward: a better card for your deck, or a blessing (a stat boost) for your champion. Lose once and the run is over.
+- **Daily puzzle:** "win this turn". The puzzle is the same for every player on a date and always winnable, and a solution is a replayable record.
+- None of it changes the rules: blessings are champion stats passed to `init`, so every match still replays under the game's `rulesetId`.
+
 **Replays and spectators.** A match is fully described by its record: the ruleset, the seed, the players, their champions and the input log. That is what LitNode replays.
 - **Share replay** turns a finished match into a link. The record rides in the URL fragment (`#replay=…`), so no server stores it, and anyone with the link watches the match move by move.
 - `deckwright replay "<link>"` replays a link from the command line and prints the result.

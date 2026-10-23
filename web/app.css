@@ -191,3 +191,33 @@ code { font: 12px ui-monospace, Consolas, monospace; }
   .card, .champ { transition: none; }
   .hit { animation: none; }
 }
+
+/* ---------------------------------------------------------------- meta loop: modes, profile, Gauntlet, puzzle */
+.modes { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.modes button { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--dim); font: 600 13px ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+.modes button[aria-pressed="true"] { border-color: var(--gold); color: var(--ink); background: rgba(240, 177, 74, .12); }
+.panel { margin-bottom: 18px; }
+.panel h3 { font: 700 16px "Cinzel", Georgia, serif; color: var(--ink); margin: 18px 0 8px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--panel); display: grid; gap: 2px; }
+.tile b { font: 700 22px "Cinzel", Georgia, serif; color: var(--gold); }
+.tile span { font-size: 12px; color: var(--dim); }
+.champ-records { margin: 0; padding-left: 20px; color: var(--ink); font-size: 14px; }
+.history { display: grid; gap: 4px; }
+.hrow { display: grid; grid-template-columns: 64px 48px 1fr auto auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 8px; background: var(--panel); font-size: 13px; color: var(--dim); }
+.hrow .h-result { font-weight: 700; }
+.hrow.win .h-result { color: #8fd18a; }
+.hrow.loss .h-result { color: #e2836f; }
+.hrow .h-what { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ghost.small { padding: 3px 10px; font-size: 12px; }
+.pips { display: flex; gap: 6px; margin-bottom: 8px; }
+.pips i { width: 26px; height: 8px; border-radius: 4px; border: 1px solid var(--line); background: rgba(255, 220, 160, .1); }
+.pips i.won { background: var(--gold); border-color: var(--gold); }
+.pips i.next { border-color: var(--gold); box-shadow: 0 0 8px rgba(240, 177, 74, .5); }
+.run-line { color: var(--dim); font-size: 14px; margin: 4px 0 8px; }
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.offer { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.offer p { margin: 0; font-size: 13px; color: var(--dim); }
+.offer .bless { font-size: 40px; color: var(--gold); line-height: 1.6; }
+.solved { color: #8fd18a; font-weight: 600; }
+@media (max-width: 560px) { .hrow { grid-template-columns: 52px 40px 1fr; } .hrow .h-turns { display: none; } }

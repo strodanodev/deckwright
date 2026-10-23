@@ -3,8 +3,10 @@
 // ruleset run, so a match replays identically everywhere. Practice is against the house bot;
 // ?relay=ws://127.0.0.1:7830&name=alice joins a dev relay (`TCG_DEV=1 pnpm relay`); add &watch=1 to spectate it.
 // #replay=<code> replays a shared match: the code is the whole match record, rebuilt here with the same rules.
+// The meta loop (profile, Gauntlet, daily puzzle) runs in this browser; its screens are in meta.js.
 // Every name on the page goes in through textContent.
-import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ReplaySession, encodeRecord, decodeRecord, REPLAY_PARAM, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore, describeCard, describeEffect, KEYWORDS } from "./engine/deckwright.js";
+import { compileGame, createRules, decode, Op, LocalBotSession, RelaySession, ReplaySession, PuzzleSession, encodeRecord, decodeRecord, REPLAY_PARAM, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, statsFromCore, describeCard, describeEffect, KEYWORDS, createGauntlet, createPuzzles, loadProfile, saveProfile, addMatch, summarize, utcDate } from "./engine/deckwright.js";
+import { createMetaScreens } from "./meta.js";
 import { createWallet } from "./lib/wallet.js";
 import { createHoldings } from "./lib/holdings.js";
 import { shortAddress } from "./lib/util.js";
@@ -188,6 +190,7 @@ $("deck-start").addEventListener("click", () => {
 });
 
 function start(champion) {
+  if (mode === "gauntlet") { startRun(champion); return; }
   if (DECK) openDeckBuilder(champion); else beginMatch(champion, null);
 }
 
@@ -200,13 +203,138 @@ function beginMatch(champion, declaredDeck) {
   session = RELAY
     ? RelaySession.dev(rules, RELAY, q.get("name") ?? `player-${randomSeed().slice(0, 6)}`, claim, wallet.snapshot().address ?? undefined)
     : new LocalBotSession(rules, randomSeed(), claim, foeChamp ? { tokenId: String(foeChamp.tokenId), stats: toStats(foeChamp.stats) } : undefined);
-  $("mode").textContent = RELAY ? "Dev relay" : "Practice vs bot";
+  openSession(RELAY ? "Dev relay" : "Practice vs bot", { kind: RELAY ? "relay" : "practice", opponent: RELAY ? "Opponent" : foeChamp?.name ?? "House bot" });
+  if (declaredDeck) session.declareDeck(declaredDeck);
+  render();
+}
+
+/** Show the board for a new match; `ctx` says what it is, for the profile and the result card. */
+function openSession(label, ctx) {
+  context = ctx; recorded = false;
+  $("mode").textContent = label;
   pick = null; prev = null; recent = [];
   session.onChange(render);
   showBoard(); setViewMode(null);
-  $("watch-link").hidden = !RELAY;
-  if (declaredDeck) session.declareDeck(declaredDeck);
+  $("watch-link").hidden = ctx.kind !== "relay";
+  $("concede").hidden = ctx.kind === "puzzle";
+}
+
+// ------------------------------------------------------------------ meta loop: profile, Gauntlet, daily puzzle
+// The profile lives in this browser (localStorage). The Gauntlet and the daily puzzle are seeded from a run seed and
+// the date, so they need no server, and every match in them is an ordinary replayable record.
+const store = (() => { try { return window.localStorage; } catch { return null; } })();
+let profile = loadProfile(store, game.litnode.rulesetId);
+const gauntlet = createGauntlet(rules);
+const puzzles = createPuzzles(rules);
+let todaysPuzzle;   // undefined until generated; null when the day has none
+let mode = "practice";
+let context = { kind: "practice" };
+let recorded = false;
+const saveProf = () => saveProfile(store, profile);
+const activeRun = () => profile.gauntlet.current;
+const champName = (tokenId) => (tokenId ? byToken.get(String(tokenId))?.name ?? `#${tokenId}` : "Base champion");
+const screens = createMetaScreens({ el, cardEl: (def) => cardEl(def), champName, game, rules });
+
+function setMode(m) {
+  mode = m;
+  for (const b of document.querySelectorAll("#modes button")) b.setAttribute("aria-pressed", String(b.dataset.mode === m));
+  $("pick-champs").hidden = !(m === "practice" || (m === "gauntlet" && !activeRun()));
+  $("pick-title").textContent = m === "gauntlet" ? "Choose a champion for your run" : "Choose your champion";
+  for (const id of ["gauntlet", "puzzle", "profile"]) $(`${id}-panel`).hidden = m !== id;
+  renderMeta();
+}
+for (const b of document.querySelectorAll("#modes button")) b.addEventListener("click", () => setMode(b.dataset.mode));
+if (RELAY) $("modes").hidden = true;   // a two-player link is about that match only
+
+/** End the current run in the profile's totals (a finished run is counted once). */
+function closeRun() {
+  const run = activeRun();
+  if (run && !run.counted) {
+    profile.gauntlet.runs++;
+    profile.gauntlet.bestStage = Math.max(profile.gauntlet.bestStage, run.wins);
+    if (run.cleared) profile.gauntlet.cleared++;
+  }
+  profile.gauntlet.current = null;
+  saveProf();
+}
+
+function renderMeta() {
+  if (mode === "profile") screens.profile($("profile-panel"), profile, summarize(profile), { onWatch: watchCode, puzzleToday: !!profile.puzzles[utcDate(Date.now())] });
+  if (mode === "gauntlet") {
+    screens.gauntlet($("gauntlet-panel"), activeRun(), gauntlet, {
+      onFight: startGauntletMatch,
+      onChoose: (i) => { profile.gauntlet.current = gauntlet.choose(activeRun(), i); saveProf(); renderMeta(); },
+      onNewRun: () => { closeRun(); setMode("gauntlet"); },
+      hasCollection: snap.cards.length > 0,
+      onStartBase: () => startRun(null),
+    });
+  }
+  if (mode === "puzzle") {
+    if (todaysPuzzle === undefined) {
+      // Generating takes a moment (a seeded bot match plus difficulty playouts): draw the panel first.
+      screens.puzzle($("puzzle-panel"), null, null, { generating: true });
+      setTimeout(() => { todaysPuzzle = puzzles.daily(utcDate(Date.now())); renderMeta(); }, 30);
+      return;
+    }
+    screens.puzzle($("puzzle-panel"), todaysPuzzle, todaysPuzzle ? profile.puzzles[todaysPuzzle.date] ?? null : null, { onPlay: startPuzzle });
+  }
+}
+
+async function watchCode(code) {
+  try { startReplay(await decodeRecord(code), code); }
+  catch (e) { showNotice(`Couldn't open that replay: ${e.message}.`); }
+}
+
+function startRun(champion) {
+  profile.gauntlet.current = gauntlet.start(randomSeed(), champion ? { tokenId: String(champion.tokenId), stats: toStats(champion.stats) } : undefined);
+  saveProf();
+  setMode("gauntlet");
+}
+
+function startGauntletMatch() {
+  const run = activeRun();
+  if (!run || run.over || run.offers.length) return;
+  const opp = gauntlet.opponent(run), me = gauntlet.player(run);
+  session?.close();
+  mine = me.tokenId ? byToken.get(me.tokenId) ?? null : null;
+  foeChamp = opp.tokenId ? byToken.get(opp.tokenId) ?? null : null;
+  session = new LocalBotSession(rules, `${run.seed}-stage-${opp.stage}`, { tokenId: me.tokenId, stats: me.stats }, { tokenId: opp.tokenId, stats: opp.stats }, { level: opp.level, foeDeck: opp.deck });
+  openSession(`Gauntlet · stage ${opp.stage}`, { kind: "gauntlet", opponent: opp.name, detail: `stage ${opp.stage}` });
+  if (DECK) session.declareDeck(me.deck);
   render();
+}
+
+function startPuzzle() {
+  const p = todaysPuzzle;
+  if (!p) return;
+  session?.close();
+  session = new PuzzleSession(rules, p);
+  mine = byToken.get(String(p.agents[p.participants[p.side]].tokenId)) ?? null;
+  foeChamp = byToken.get(String(p.agents[p.participants[1 - p.side]].tokenId)) ?? null;
+  openSession("Daily puzzle", { kind: "puzzle", opponent: "Rival", detail: p.date });
+  render();
+}
+
+/** Once per match: into the profile (with its replay), and into the Gauntlet run or the puzzle streak. */
+async function onFinished(s, meIdx, puzzleState) {
+  if (recorded || viewing()) return;
+  recorded = true;
+  if (context.kind === "puzzle") {
+    // Attempts aren't matches: a solve counts once per day, toward the puzzle streak.
+    if (puzzleState === "solved" && !profile.puzzles[session.puzzle.date]) { profile.puzzles[session.puzzle.date] = { at: Date.now(), actions: session.actions }; saveProf(); }
+    return;
+  }
+  const won = s.winner === meIdx;
+  const result = s.winner === 2 ? "draw" : won ? "win" : "loss";
+  if (context.kind === "gauntlet" && activeRun()) {
+    const run = gauntlet.result(activeRun(), won);
+    profile.gauntlet.current = run;
+    if (run.over) { closeRun(); profile.gauntlet.current = { ...run, counted: true }; }
+  }
+  let replay;
+  try { replay = await encodeRecord(session.record()); } catch { /* the result still counts without a replay */ }
+  profile = addMatch(profile, { at: Date.now(), mode: context.kind, result, turns: s.turnNo, ruleset: game.litnode.rulesetId, ...(mine ? { champion: String(mine.tokenId) } : {}), opponent: context.opponent, ...(replay ? { replay } : {}), ...(context.detail ? { detail: context.detail } : {}) });
+  saveProf();
 }
 
 const act = (x) => { pick = null; session.act(x); };
@@ -463,7 +591,7 @@ function render() {
   if (pick) for (const m of moves) if (m.op === pickOp[pick.kind] && m.a === pick.index) targets.set(m.target, m.x);
 
   if (RELAY && !watching && !foeChamp) foeChamp = byToken.get(String(session.champions?.[foe.id]?.tokenId)) ?? null;
-  const foeHero = heroEl(foe, watching ? champOf(foe.id) : foeChamp, watching ? playerName(foe.id) : RELAY ? "Opponent" : "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null, powerEl(foe, moves, false));
+  const foeHero = heroEl(foe, watching ? champOf(foe.id) : foeChamp, watching ? playerName(foe.id) : RELAY ? "Opponent" : context.opponent ?? "House bot", hurtFoe, targets.has(ENEMY_CHAMPION) ? () => act(targets.get(ENEMY_CHAMPION)) : null, powerEl(foe, moves, false));
   $("foe-hero").replaceChildren(...foeHero.childNodes);
   $("foe-hero").dataset.el = foeHero.dataset.el;
   const myHero = heroEl(me, watching ? champOf(me.id) : mine, watching ? playerName(me.id) : "You", hurtMe, null, powerEl(me, moves, true));
@@ -520,17 +648,27 @@ function render() {
     : (s.over ? "Match over" : myTurn ? "Your turn" : "Opponent's turn");
   status.append(el("b", null, headline), ` · turn ${s.turnNo}${hint ? ` · ${hint}` : ""}`);
   if (recent.length) status.append(el("br"), recent.join(" · "));
-  if (!replaying() && session.status && !/^practice|^live$|^watching/.test(session.status)) status.append(el("br"), session.status);
+  if (!replaying() && session.status && !/^practice|^live$|^watching|^puzzle$/.test(session.status)) status.append(el("br"), session.status);
   renderViewbar(s);
 
-  // Players and spectators get the result card; a replay just stops on its last move.
-  if (s.over && !replaying() && $("result").hidden) {
-    $("result-title").textContent = watching ? (s.winner === 2 ? "Draw" : `${playerName(s.p[s.winner].id)} wins`) : s.winner === 2 ? "Draw" : s.winner === meIdx ? "Victory" : "Defeat";
-    $("result-sub").textContent = `${s.turnNo} turns · ${watching ? `${playerName(me.id)} ${me.life} life · ${playerName(foe.id)} ${foe.life} life` : `${me.life} life left`}${RELAY && !watching ? ` · ${session.status}` : ""}`;
+  // Players and spectators get the result card; a replay just stops on its last move. A puzzle ends when its turn does.
+  const puzzleState = session instanceof PuzzleSession ? puzzles.status(session.puzzle, s) : null;
+  const finished = puzzleState ? puzzleState !== "playing" : s.over;
+  if (finished && !replaying() && $("result").hidden) {
+    const kind = context.kind;
+    if (puzzleState) {
+      $("result-title").textContent = puzzleState === "solved" ? "Solved!" : "Not this time";
+      $("result-sub").textContent = puzzleState === "solved" ? `${session.actions} actions (the bot needed ${session.puzzle.par})` : "Your turn ended without a win. Try another line.";
+    } else {
+      $("result-title").textContent = watching ? (s.winner === 2 ? "Draw" : `${playerName(s.p[s.winner].id)} wins`) : s.winner === 2 ? "Draw" : s.winner === meIdx ? "Victory" : "Defeat";
+      $("result-sub").textContent = `${s.turnNo} turns · ${watching ? `${playerName(me.id)} ${me.life} life · ${playerName(foe.id)} ${foe.life} life` : `${me.life} life left`}${RELAY && !watching ? ` · ${session.status}` : ""}${kind === "gauntlet" ? ` · ${context.detail}` : ""}`;
+    }
     $("again").hidden = watching;
-    $("change").textContent = watching ? "Exit" : "New champion";
+    $("again").textContent = kind === "gauntlet" ? "Back to the Gauntlet" : kind === "puzzle" ? (puzzleState === "solved" ? "Back to the puzzle" : "Retry") : "Rematch";
+    $("change").textContent = watching ? "Exit" : kind === "practice" || kind === "relay" ? "New champion" : "Menu";
     $("share").hidden = true;
     $("result").hidden = false;
+    void onFinished(s, meIdx, puzzleState);
   } else if (s.over && !replaying() && RELAY && !watching) {
     $("result-sub").textContent = `${s.turnNo} turns · ${me.life} life left · ${session.status}`;   // settlement status updates
   }
@@ -545,8 +683,15 @@ $("concede").addEventListener("click", () => {
   b.textContent = "Really concede?";
   concedeArmed = setTimeout(() => { concedeArmed = null; b.textContent = "Concede"; }, 3000);
 });
-$("again").addEventListener("click", () => (lastDeck ? beginMatch(mine, lastDeck) : start(mine)));
-$("change").addEventListener("click", () => { lastDeck = null; exitView(); });
+$("again").addEventListener("click", () => {
+  if (context.kind === "gauntlet") { exitView(); setMode("gauntlet"); return; }
+  if (context.kind === "puzzle") {
+    if (puzzles.status(session.puzzle, session.state) === "solved") { exitView(); setMode("puzzle"); return; }
+    $("result").hidden = true; recorded = false; prev = null; recent = []; session.retry(); return;
+  }
+  if (lastDeck) beginMatch(mine, lastDeck); else start(mine);
+});
+$("change").addEventListener("click", () => { lastDeck = null; exitView(); setMode(context.kind === "gauntlet" || context.kind === "puzzle" ? context.kind : "practice"); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pick) { pick = null; render(); } });
 
 // "Build your own" copy buttons (demo site only; the section is not in scaffolded games).

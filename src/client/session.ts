@@ -1,8 +1,9 @@
 import { concede, declare } from '../core/actions';
-import { greedyBot } from '../core/bot';
+import { type BotLevel, greedyBot } from '../core/bot';
 import { normalizeStats } from '../core/champion';
 import type { Rules } from '../core/rules';
 import type { AgentStats, MatchState } from '../core/types';
+import type { Puzzle } from '../meta/puzzle';
 import { type MatchRecord, recordOf, replayStates } from './replay';
 import { type CabinetShell, connectShell, parseLaunch } from './shell';
 
@@ -77,26 +78,32 @@ abstract class BaseSession implements MatchSession {
   public abstract close(): void;
 }
 
-/** Offline: you against the greedy bot. Nothing is recorded or settled. */
+/** Options for an offline match: the bot's strength and, for declared-deck games, the deck it plays. */
+export interface BotOptions { level?: BotLevel; foeDeck?: number[] }
+
+/** Offline: you against the greedy bot. Nothing is settled; `record()` makes it replayable. */
 export class LocalBotSession extends BaseSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly bot: (s: MatchState, side?: 0 | 1) => number;
+  private readonly foeDeck: number[] | null;
 
   /** `you` / `foe`: each side's champion; omitted means no champion (every stat 0, as LitNode hydrates it). */
-  constructor(rules: Rules, seed = `${Date.now()}`, you?: AgentClaim, foe?: AgentClaim) {
+  constructor(rules: Rules, seed = `${Date.now()}`, you?: AgentClaim, foe?: AgentClaim, opts: BotOptions = {}) {
     super(rules, 'you');
-    this.bot = greedyBot(rules);
+    this.bot = greedyBot(rules, { level: opts.level });
+    this.foeDeck = opts.foeDeck?.length ? opts.foeDeck : null;
     this.begin(seed, ['you', 'bot'], { you, bot: foe });
     this.status = 'practice vs bot';
     this.botTurn();
   }
 
-  /** Both decks go into the log at once: your cards on your side, the suggested deck on the bot's. */
+  /** Both decks go into the log at once: your cards on your side, the bot's deck (or the suggested deck) on its side. */
   public declareDeck(cards: number[]): void {
     // Cards that are not legal (unknown, over maxCopies) are no-ops; the suggested deck fills any gap.
     for (let i = 0; this.state?.phase === 'decks' && i < 200; i++) {
       const mine = cards[i] !== undefined ? declare(cards[i]) : this.rules.suggestedDeclaration(this.state, 0);
-      this.apply({ k: this.entries.length, inputs: [mine, this.bot(this.state, 1)] });
+      const foe = this.foeDeck?.[i] !== undefined ? declare(this.foeDeck[i]) : this.bot(this.state, 1);
+      this.apply({ k: this.entries.length, inputs: [mine, foe] });
     }
     this.changed();
     this.botTurn();
@@ -318,6 +325,45 @@ export class ReplaySession implements MatchSession {
   public declareDeck(): void {}
   public concede(): void {}
   public close(): void { this.pause(); }
+}
+
+/**
+ * A daily puzzle: the match is rebuilt from the puzzle's log prefix, and you play the puzzle side's turn.
+ * There is no opponent move: once your turn ends (or you win), `status` says solved or failed. `record()`
+ * is the full log, so a solution is a replay anyone can verify.
+ */
+export class PuzzleSession extends BaseSession {
+  /** The state at the start of the puzzle turn, for retries. */
+  private readonly prefixLength: number;
+
+  constructor(rules: Rules, public readonly puzzle: Puzzle) {
+    super(rules, puzzle.participants[puzzle.side]);
+    this.begin(puzzle.seed, puzzle.participants, puzzle.agents);
+    for (const [a, b] of puzzle.prefix) this.apply({ k: this.entries.length, inputs: [a, b] });
+    this.prefixLength = this.entries.length;
+    this.status = 'puzzle';
+  }
+
+  /** Actions you have taken this attempt. */
+  public get actions(): number { return this.entries.length - this.prefixLength; }
+
+  public act(x: number): void {
+    if (!this.state || this.state.over || this.state.turn !== this.puzzle.side) return;
+    this.apply({ k: this.entries.length, inputs: this.puzzle.side === 0 ? [x, 0] : [0, x] });
+    this.changed(this.state.over ? 'match over' : undefined);
+  }
+
+  /** Back to the start of the puzzle turn. */
+  public retry(): void {
+    this.entries.length = this.prefixLength;
+    let s = this.rules.init(this.puzzle.seed, this.puzzle.participants, { agents: this.puzzle.agents });
+    for (const [a, b] of this.puzzle.prefix) s = this.rules.step(s, { [this.puzzle.participants[0]]: a, [this.puzzle.participants[1]]: b });
+    this.state = s;
+    this.changed('puzzle');
+  }
+
+  public declareDeck(): void {}
+  public close(): void {}
 }
 
 /**

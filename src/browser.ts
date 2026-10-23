@@ -6,3 +6,4 @@ export * from './core/index';
 export * from './client/shell';
 export * from './client/session';
 export * from './client/replay';
+export * from './meta/index';

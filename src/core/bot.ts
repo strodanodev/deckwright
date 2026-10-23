@@ -1,4 +1,5 @@
 import { decode, Op } from './actions';
+import { seededRandom } from './rng';
 import type { Rules } from './rules';
 import type { MatchState, UnitState } from './types';
 
@@ -7,8 +8,16 @@ import type { MatchState, UnitState } from './types';
  * nothing helps. Setup plays (non-unit cards and hero powers) get a second look one action deeper, so it
  * spends energy and draw cards when they lead somewhere. Used by the offline client, the headless sim and
  * as a stand-in for AFK players in tests. Not part of any ruleset.
+ *
+ * `level` sets the strength, deterministically (any randomness is seeded from the state, so sims and replays
+ * of bot games stay reproducible):
+ * - 1, easy: picks among its three best moves at random, and sometimes ends the turn early;
+ * - 2, normal (the default): the greedy bot the sim balances with;
+ * - 3, hard: looks one action deeper on its six best candidates.
  */
-export function greedyBot(rules: Rules): (state: MatchState, side?: 0 | 1) => number {
+export type BotLevel = 1 | 2 | 3;
+
+export function greedyBot(rules: Rules, { level = 2 }: { level?: BotLevel } = {}): (state: MatchState, side?: 0 | 1) => number {
   const cards = rules.game.cards;
   const has = (u: UnitState, k: string): boolean => cards[u.c].keywords?.includes(k as never) ?? false;
   const unitValue = (u: UnitState): number =>
@@ -32,23 +41,39 @@ export function greedyBot(rules: Rules): (state: MatchState, side?: 0 | 1) => nu
     const c = s.p[s.turn].hand[a];
     return c !== undefined && cards[c].type !== 'unit';
   };
-  const bestOf = (state: MatchState, me: 0 | 1, deeper: boolean): { x: number; v: number } => {
+  /** Every non-END action with its score, best first. */
+  const ranked = (state: MatchState, me: 0 | 1, deeper: boolean): Array<{ x: number; v: number }> => {
     const id = state.p[me].id;
-    let best = 0, bestScore = -Infinity;
+    const out: Array<{ x: number; v: number; next: MatchState }> = [];
     for (const x of rules.legalActions(state)) {
       if (decode(x).op === Op.End) continue;
       const next = rules.step(state, { [id]: x });
       let v = score(next, me);
       if (deeper && isSetup(state, x) && !next.over && next.turn === me) v = Math.max(v, bestOf(next, me, false).v - 0.1);
-      if (v > bestScore) { bestScore = v; best = x; }
+      out.push({ x, v, next });
     }
-    return { x: best, v: bestScore };
+    out.sort((a, b) => b.v - a.v);
+    if (level === 3 && deeper) {
+      // Hard: the best follow-up decides among the top candidates, so it sets up kills it can't see in one step.
+      for (const c of out.slice(0, 6)) if (!c.next.over && c.next.turn === me) c.v = Math.max(c.v, bestOf(c.next, me, false).v - 0.05);
+      out.sort((a, b) => b.v - a.v);
+    }
+    return out;
   };
+  const bestOf = (state: MatchState, me: 0 | 1, deeper: boolean): { x: number; v: number } => ranked(state, me, deeper)[0] ?? { x: 0, v: -Infinity };
   return (state, side = state.turn) => {
     if (state.phase === 'decks') return rules.suggestedDeclaration(state, side);
     const me = state.turn;
-    const { x, v } = bestOf(state, me, true);
-    // Spend the turn while anything is legal and not worse than passing.
-    return x !== 0 && v >= score(state, me) ? x : rules.legalActions(state).at(-1) ?? 0;
+    const end = rules.legalActions(state).at(-1) ?? 0;
+    const pass = score(state, me);
+    const options = ranked(state, me, true).filter((o) => o.v >= pass);
+    if (!options.length) return end;
+    if (level === 1) {
+      // Easy: a seeded pick among the top three, and a one-in-five chance to stop spending.
+      const rnd = seededRandom(`${state.seed}|bot|${state.beat}`);
+      if (rnd() % 5 === 0) return end;
+      return options[rnd() % Math.min(3, options.length)].x;
+    }
+    return options[0].x;
   };
 }
