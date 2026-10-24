@@ -150,7 +150,7 @@ body:has(#ui > .page:not([hidden])) #arena { filter: blur(6px) brightness(0.8) s
 .champ-detail { display: flex; flex-direction: column; align-self: start; max-height: 100%; overflow: hidden; }
 .cd-scroll { flex: 1 1 auto; min-height: 0; display: grid; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .cta-dock { flex: none; padding: 12px 20px 16px; border-top: 1px solid var(--line); background: rgba(14, 11, 19, 0.6); }
-.cd-card { width: min(170px, 50%); justify-self: center; margin: 16px 0 0; perspective: 900px; }
+.cd-card { width: min(170px, 50%, 20vh); justify-self: center; margin: 14px 0 0; perspective: 900px; }
 .cd-body { display: grid; gap: 10px; padding: 10px 20px 16px; }
 .cd-name { margin: 0; font-size: 22px; letter-spacing: 0.1em; }
 .stat-rows { display: grid; gap: 8px; }
@@ -305,6 +305,8 @@ body:has(#ui > .page:not([hidden])) #arena { filter: blur(6px) brightness(0.8) s
   .ph-body > :not(.tiles) { grid-column: 2; }
   .ph-body > .tiles { grid-column: 1 / -1; margin-top: 8px; }
   .ph-name { font-size: 22px; }
+  .ph-card .ccard .name { font-size: 10px; }
+  .ph-card .ccard .sub { display: none; }
   .hero-art { height: 110px; }
   .stage-body { grid-template-columns: 1fr; justify-items: center; }
   .stage-foe { width: 150px; }
