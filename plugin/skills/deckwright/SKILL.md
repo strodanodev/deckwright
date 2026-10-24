@@ -119,23 +119,25 @@ npx deckwright dev                                 # serves http://127.0.0.1:417
 ```
 
 - Run `dev` in the background.
-- Open the site, pick a champion, and play at least one full turn against the bot:
+- Open the site: Play, pick a champion, forge a deck (declared-deck games), and play at least one full turn against the bot:
   - play a card;
   - attack;
   - end the turn;
   - check the browser console has no errors.
-- To restyle it to the theme:
-  - `web/app.css`: the `:root` colour tokens and fonts (element colours come from `elements[].color` in the game file);
-  - `web/index.html`: text, title, description.
+- The client is a game, not a page: a title screen, champion select, the deck forge, a versus loader, the battle HUD and a result screen, over an arena backdrop. To restyle it to the theme:
+  - **Colours and fonts:** the `:root` tokens in `web/styles/theme.css` (gold, panels, rarity colours). Element colours come from `elements[].color` in the game file; set them, and every card, gem and plate follows.
+  - **The arena:** `web/ui/arena.js` and `web/styles/arena.css`. There are two realms: `valhalla` (stone and aurora) and `underworld` (basalt and lava). Champions pick one by faction or element, and players can choose on champion select. Retune the realm's CSS variables (`--sky-*`, `--stone`, `--dais-ring`, `--fire`) for a new look.
+  - **Text:** the title screen uses the game's `title` (the last word becomes the gilded subtitle) and the collection's name. Change the `<title>` and description in `web/index.html`.
+  - **Layout:** each screen is one module in `web/ui/screens/`; cards are drawn in `web/ui/cards.js`.
 - Keep the page's safety rules:
-  - no inline `<script>` (the CSP blocks it), so logic stays in `web/app.js`;
-  - card and collection names go in through `textContent` only, never `innerHTML`.
+  - no inline `<script>` (the CSP blocks it), so logic stays in `web/app.js` and `web/ui/`;
+  - card and collection names go in through `textContent` only, never `innerHTML`. Use `h(tag, props, text)` from `web/ui/dom.js`; `icon()` is the one place trusted SVG is set as HTML.
 - Re-run `deckwright web` after every game JSON change; it regenerates `web/engine`, `web/data` and the art.
-- The site's mode bar has **Practice**, **Gauntlet** (eight bot matches with rewards), **Daily puzzle** ("win this turn") and **Profile** (history, streaks, replays). They work for any game with no extra config.
+- The title menu has **Play** (practice against the bot, easy, normal or hard), **Gauntlet** (eight bot matches with rewards), **Daily puzzle** ("win this turn") and **Profile** (history, streaks, replays). They work for any game with no extra config.
   - Check that today's puzzle loads.
   - Check that a Gauntlet run starts.
   - Card swaps in the Gauntlet need `deckRules.mode: "declared"`. Fixed-deck games get blessings only.
-  - The screens are in `web/meta.js`; the logic is in `src/meta`.
+  - The screens are in `web/ui/screens/meta.js`; the logic is in `src/meta`.
 
 ## 7. Two players (optional check)
 
@@ -177,7 +179,7 @@ Don't break these when extending Deckwright itself.
 |---|---|
 | `invalid game config: …` | Read the listed problems; each names the field. Limits are in game-config.md |
 | `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/deckwright` and then `npx deckwright` |
-| Site blank, console CSP error | Something was inlined or loaded from another origin. Move it into `web/` or `app.js` |
+| Site blank, console CSP error | Something was inlined or loaded from another origin. Move it into `web/ui/` or `web/styles/` |
 | `snapshot` slow or `429` | The public RPC throttles; the tool waits and retries. Explorer-backed chains are faster |
 | Art missing after `web` | Remote art is dropped by design: re-run `snapshot` (it downloads), or use local `art` paths |
 

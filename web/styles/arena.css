@@ -1,0 +1,104 @@
+/*
+ * The arena: the level behind every screen, carried over from Rapture Chess's two realms.
+ *   Valhalla    the Alliance's hall of stone and gold under an aurora.
+ *   Underworld  the Horde's basalt crater, a lava moat round the dais.
+ * Built from layers (ui/arena.js): sky, aurora or lava glow, a far skyline, a perspective floor with the octagonal
+ * dais, near pillars, braziers, embers, fog and a vignette. Only small elements loop; big layers animate opacity
+ * or transform once, so it stays cheap on phones.
+ */
+#arena { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #050409; pointer-events: none;
+  --sky-top: #070b1a; --sky-mid: #142040; --sky-low: #2a3a66; --horizon: #3d5a8a; --stone: #262632; --stone-hi: #3a3a4a; --seam: rgba(0, 0, 0, 0.55);
+  --dais: #1c1c26; --dais-ring: #ffc95e; --rim: #9fd0ff; --fire: #ffd27a; --fog: rgba(10, 15, 30, 0.85); }
+#arena[data-realm='underworld'] { --sky-top: #050102; --sky-mid: #1a0503; --sky-low: #4a0d06; --horizon: #a8280c; --stone: #1a1012; --stone-hi: #2c1a1a; --seam: rgba(0, 0, 0, 0.6);
+  --dais: #140a0a; --dais-ring: #ff6a2a; --rim: #ff5a2a; --fire: #ff7a2a; --fog: rgba(30, 6, 4, 0.85); }
+#arena > * { position: absolute; }
+
+/* sky */
+.ar-sky { inset: 0; background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 34%, var(--sky-low) 50%, var(--horizon) 56%, var(--sky-low) 62%, var(--bg-0) 100%); transition: background 0.8s; }
+.ar-stars { inset: 0 0 45% 0; opacity: 0.8; background-image:
+  radial-gradient(1px 1px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 28% 8%, #dfe8ff, transparent), radial-gradient(1.5px 1.5px at 44% 22%, #fff, transparent),
+  radial-gradient(1px 1px at 61% 12%, #fff, transparent), radial-gradient(1px 1px at 77% 26%, #cfe0ff, transparent), radial-gradient(1.5px 1.5px at 88% 9%, #fff, transparent),
+  radial-gradient(1px 1px at 6% 34%, #fff, transparent), radial-gradient(1px 1px at 53% 36%, #fff, transparent), radial-gradient(1px 1px at 93% 38%, #fff, transparent),
+  radial-gradient(1px 1px at 35% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 4%, #fff, transparent), radial-gradient(1px 1px at 19% 44%, #fff, transparent); }
+#arena[data-realm='underworld'] .ar-stars { opacity: 0.18; }
+
+/* Valhalla: the aurora, two soft bands that drift */
+.ar-aurora { inset: -10% -20% 40% -20%; opacity: 0.75; transition: opacity 0.8s; }
+.ar-aurora i { position: absolute; left: 0; right: 0; height: 46%; border-radius: 50%; filter: blur(28px); will-change: transform; }
+.ar-aurora i:nth-child(1) { top: 18%; background: radial-gradient(ellipse at 40% 50%, rgba(80, 255, 190, 0.42), rgba(60, 160, 255, 0.18) 45%, transparent 70%); animation: aurora 22s ease-in-out infinite alternate; }
+.ar-aurora i:nth-child(2) { top: 6%; background: radial-gradient(ellipse at 65% 50%, rgba(150, 110, 255, 0.36), rgba(60, 200, 255, 0.14) 45%, transparent 70%); animation: aurora 30s ease-in-out infinite alternate-reverse; }
+@keyframes aurora { from { transform: translate3d(-6%, 0, 0) scaleY(0.9); } to { transform: translate3d(6%, 4%, 0) scaleY(1.15); } }
+#arena[data-realm='underworld'] .ar-aurora { opacity: 0; }
+
+/* Underworld: the crater's glow, from below the horizon */
+.ar-glow { left: -10%; right: -10%; top: 30%; height: 50%; opacity: 0; transition: opacity 0.8s;
+  background: radial-gradient(ellipse 60% 55% at 50% 60%, rgba(255, 90, 30, 0.55), rgba(180, 30, 10, 0.22) 45%, transparent 72%); }
+#arena[data-realm='underworld'] .ar-glow { opacity: 1; animation: lavaBreath 6s ease-in-out infinite; }
+@keyframes lavaBreath { 50% { opacity: 0.72; } }
+
+/* the far skyline: one SVG per realm, only the current one shows */
+.ar-far { left: 0; right: 0; top: 24%; height: 34%; }
+.ar-far svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s; }
+#arena[data-realm='valhalla'] .ar-far .vh, #arena[data-realm='underworld'] .ar-far .uw { opacity: 1; }
+
+/* the floor: a stone plane in perspective, with the octagonal dais in its middle */
+.ar-stage { inset: 0; perspective: 900px; perspective-origin: 50% 18%; }
+.ar-floor, .ar-dais { position: absolute; }
+.ar-floor { left: -60%; right: -60%; top: 55%; height: 140%; transform-origin: 50% 0; transform: rotateX(74deg); transition: background 0.8s;
+  background:
+    radial-gradient(ellipse 22% 18% at 50% 14%, color-mix(in srgb, var(--rim) 18%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255, 225, 170, 0.07) 0 2px, transparent 2px 140px),
+    repeating-linear-gradient(0deg, rgba(255, 225, 170, 0.07) 0 2px, transparent 2px 140px),
+    linear-gradient(180deg, var(--stone-hi), var(--stone) 35%, #060508 80%); }
+.ar-dais { left: 50%; top: 3%; width: 17%; aspect-ratio: 1; transform: translateX(-50%); }
+.ar-dais i { position: absolute; inset: 0; clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%); }
+.ar-dais .moat { inset: -14%; opacity: 0; background: radial-gradient(circle, transparent 52%, #ff7a2a 60%, #b8200a 70%, #2a0402 76%); transition: opacity 0.8s; }
+#arena[data-realm='underworld'] .ar-dais .moat { opacity: 1; animation: lavaBreath 4s ease-in-out infinite; }
+.ar-dais .ring { inset: -2.5%; background: linear-gradient(135deg, var(--gold-1), var(--dais-ring) 40%, var(--gold-4) 60%, var(--dais-ring)); }
+.ar-dais .top { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--dais) 70%, #fff 8%), var(--dais) 60%, #050407); }
+.ar-dais .sigil { inset: 22%; clip-path: none; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--dais-ring) 55%, transparent); box-shadow: 0 0 40px color-mix(in srgb, var(--dais-ring) 40%, transparent), inset 0 0 40px color-mix(in srgb, var(--dais-ring) 30%, transparent); }
+.ar-dais .sigil::after { content: ''; position: absolute; inset: 14%; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--dais-ring) 50%, transparent); }
+
+/* near pillars frame the view, one set per realm */
+.ar-near { inset: 0; }
+.ar-near svg { position: absolute; bottom: 0; height: 100%; width: auto; max-width: 30vw; opacity: 0; transition: opacity 0.8s; }
+.ar-near svg.l { left: 0; }
+.ar-near svg.r { right: 0; transform: scaleX(-1); }
+#arena[data-realm='valhalla'] .ar-near .vh, #arena[data-realm='underworld'] .ar-near .uw { opacity: 1; }
+
+/* braziers: a bowl and a small flame that flickers (transform and opacity only) */
+.ar-brazier { bottom: 18%; width: 46px; height: 92px; }
+.ar-brazier.b1 { left: 12%; }
+.ar-brazier.b2 { right: 12%; }
+.ar-brazier.b3 { left: 30%; bottom: 40%; transform: scale(0.55); }
+.ar-brazier.b4 { right: 30%; bottom: 40%; transform: scale(0.55); }
+.ar-brazier .bowl { position: absolute; left: 4px; right: 4px; bottom: 0; height: 64px; background: linear-gradient(90deg, #120e0a, #3a2c1c 45%, #120e0a); clip-path: polygon(0 0, 100% 0, 78% 22%, 60% 26%, 60% 100%, 40% 100%, 40% 26%, 22% 22%); }
+.ar-brazier .flame { position: absolute; left: 50%; bottom: 58px; width: 34px; height: 46px; margin-left: -17px; border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background: radial-gradient(ellipse at 50% 75%, #fff6d0 0%, var(--fire) 35%, color-mix(in srgb, var(--fire) 60%, #a01800) 62%, transparent 72%); filter: blur(1px);
+  transform-origin: 50% 90%; animation: flicker 1.6s ease-in-out infinite; }
+.ar-brazier .halo { position: absolute; left: 50%; bottom: 40px; width: 220px; height: 220px; margin-left: -110px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--fire) 30%, transparent), transparent 65%); animation: haloPulse 3.2s ease-in-out infinite; }
+.ar-brazier.b2 .flame { animation-delay: -0.5s; }
+.ar-brazier.b3 .flame { animation-delay: -1s; }
+.ar-brazier.b4 .flame { animation-delay: -0.3s; }
+@keyframes flicker { 0%, 100% { transform: scale(1, 1) rotate(-2deg); opacity: 0.95; } 30% { transform: scale(0.92, 1.08) rotate(2deg); } 55% { transform: scale(1.06, 0.94) rotate(-1deg); opacity: 0.85; } 80% { transform: scale(0.96, 1.04) rotate(1.5deg); } }
+@keyframes haloPulse { 50% { opacity: 0.7; } }
+
+.ar-fog { left: 0; right: 0; top: 42%; height: 26%; background: linear-gradient(180deg, transparent, var(--fog) 50%, transparent); opacity: 0.65; transition: background 0.8s; }
+.ar-vignette { inset: 0; background: radial-gradient(ellipse 75% 65% at 50% 52%, transparent 40%, rgba(3, 2, 6, 0.82) 100%); }
+/* battle: dim the level so the board reads */
+.ar-shade { inset: 0; background: rgba(4, 3, 7, 0.4); opacity: 0; transition: opacity 0.6s; }
+#arena[data-mood='battle'] .ar-shade { opacity: 1; }
+#arena[data-mood='battle'] .ar-brazier.b3, #arena[data-mood='battle'] .ar-brazier.b4 { opacity: 0; }
+
+/* a hit on a champion shakes the whole level a little */
+#arena.quake { animation: quake 0.4s ease-out; }
+@keyframes quake { 20% { transform: translate3d(-5px, 2px, 0); } 40% { transform: translate3d(4px, -2px, 0); } 60% { transform: translate3d(-3px, 1px, 0); } 80% { transform: translate3d(2px, 0, 0); } }
+
+@media (max-width: 760px) {
+  .ar-dais { width: 34%; }
+  .ar-brazier.b1 { left: 2%; } .ar-brazier.b2 { right: 2%; }
+  .ar-brazier.b3, .ar-brazier.b4 { display: none; }
+  .ar-near svg { max-width: 22vw; }
+  #arena[data-realm='valhalla'] .ar-near .vh, #arena[data-realm='underworld'] .ar-near .uw { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) { .ar-aurora i, .ar-brazier .flame, .ar-brazier .halo { animation: none !important; } }

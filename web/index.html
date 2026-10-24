@@ -2,147 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Deckwright · Web3 TCG game maker</title>
-<meta name="description" content="Deckwright: build a trading card game from an NFT collection. One JSON file is a game; on-chain ERC-6699 stats make the champions. Play the demo duel." />
-<meta name="theme-color" content="#0b0a09" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Deckwright</title>
+<meta name="description" content="A trading card game made with Deckwright: on-chain ERC-6699 stats make the champions, every match replays, and LitNode settles it." />
+<meta name="theme-color" content="#050409" />
+<meta name="color-scheme" content="dark" />
+<!-- deckwright:funnel --><meta name="deckwright-funnel" content="1" /><!-- /deckwright:funnel -->
 <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./app.css" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles/theme.css" />
+<link rel="stylesheet" href="./styles/arena.css" />
+<link rel="stylesheet" href="./styles/cards.css" />
+<link rel="stylesheet" href="./styles/screens.css" />
+<link rel="stylesheet" href="./styles/battle.css" />
+<style>
+  /* the boot screen paints before any script or stylesheet arrives */
+  html, body { margin: 0; height: 100%; background: #050409; overflow: hidden; }
+  #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 42%, #1c1424 0%, #07060b 62%, #030205 100%); color: #ffc95e; font-family: 'Cinzel', Georgia, 'Palatino Linotype', serif; transition: opacity 0.8s ease, visibility 0.8s; }
+  #boot.done { opacity: 0; visibility: hidden; }
+  #boot .b-in { display: grid; justify-items: center; gap: 18px; width: min(360px, 78vw); text-align: center; }
+  #boot .b-emb { position: relative; width: 132px; height: 132px; }
+  #boot .b-emb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #boot .b-spin { animation: bspin 6s linear infinite; opacity: 0.85; }
+  #boot .b-glow { position: absolute; inset: -40%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 190, 80, 0.22), transparent 62%); animation: bpulse 2.4s ease-in-out infinite; }
+  #boot h1 { margin: 6px 0 0; font-weight: 600; font-size: 28px; letter-spacing: 0.32em; text-transform: uppercase; color: #fff1cc; text-indent: 0.32em; }
+  #boot .b-track { width: 100%; height: 2px; background: rgba(255, 201, 94, 0.14); overflow: hidden; }
+  #boot #boot-bar { height: 100%; background: linear-gradient(90deg, #8a5c1c, #ffe2a0, #8a5c1c); transform: scaleX(0.02); transform-origin: left; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 12px #ffc95e; }
+  #boot #boot-text { font: 11px/1.4 system-ui, sans-serif; letter-spacing: 0.28em; text-transform: uppercase; color: #9a8f7a; min-height: 1.4em; margin: 0; }
+  @keyframes bspin { to { transform: rotate(360deg); } }
+  @keyframes bpulse { 50% { opacity: 0.45; transform: scale(0.92); } }
+  @media (prefers-reduced-motion: reduce) { #boot .b-spin, #boot .b-glow { animation: none; } }
+</style>
 </head>
 <body>
-<header class="top">
-  <span class="brand">Deckwright</span>
-  <h1 id="game-title">Duel</h1>
-  <div class="top-right">
-    <!-- deckwright:funnel --><a class="build-link" href="#build">Build your own</a><!-- /deckwright:funnel -->
-    <span id="mode" class="pill">Practice</span>
-    <button id="wallet" class="ghost" type="button">Connect wallet</button>
-  </div>
-</header>
+<div id="arena" aria-hidden="true"></div>
+<main id="ui"></main>
 
-<section id="pick" class="pick" aria-labelledby="pick-title">
-  <p class="kicker">Web3 TCG game maker · demo game</p>
-  <p id="notice" class="notice" role="alert" hidden></p>
-  <nav class="modes" id="modes" aria-label="Game modes">
-    <button type="button" data-mode="practice" aria-pressed="true">Practice</button>
-    <button type="button" data-mode="gauntlet" aria-pressed="false">Gauntlet</button>
-    <button type="button" data-mode="puzzle" aria-pressed="false">Daily puzzle</button>
-    <button type="button" data-mode="profile" aria-pressed="false">Profile</button>
-  </nav>
-  <div class="panel" id="gauntlet-panel" hidden aria-live="polite"></div>
-  <div class="panel" id="puzzle-panel" hidden aria-live="polite"></div>
-  <div class="panel" id="profile-panel" hidden></div>
-  <div id="pick-champs">
-  <h2 id="pick-title">Choose your champion</h2>
-  <p class="lede">Every <b id="collection-name">collection</b> card can fight. A champion's on-chain stats shape your side: <b>resilience</b> sets life, <b>intelligence</b> spell power, <b>strength</b> unit attack, <b>agility</b> your opening hand. Cards your wallet holds are marked; in practice any champion may fight.</p>
-  <div class="pick-filter" role="group" aria-label="Show">
-    <button type="button" data-filter="all" aria-pressed="true">All</button>
-    <button type="button" data-filter="owned" aria-pressed="false">Held by me</button>
-  </div>
-  <div id="champions" class="champions"></div>
-  </div>
-</section>
-
-<!-- deckwright:funnel -->
-<section id="build" class="build" aria-labelledby="build-title">
-  <p class="kicker">Open source · Apache-2.0</p>
-  <h2 id="build-title">Build your own trading card game</h2>
-  <p class="lede">This duel is one JSON file. Deckwright turns any NFT collection into a card set, its on-chain ERC-6699 stats into champions, and gives you the rules engine, a bot, two-player play and a site you can deploy in minutes.</p>
-  <ol class="steps">
-    <li>
-      <h3>Create a game</h3>
-      <div class="cmd"><code id="cmd-create">npx github:strodanodev/deckwright create my-tcg</code><button type="button" class="copy" data-copy="cmd-create" aria-label="Copy command">Copy</button></div>
-      <p>Scaffolds a playable game, its site, and an AI skill that knows the whole workflow.</p>
-    </li>
-    <li>
-      <h3>Bring a collection</h3>
-      <div class="cmd"><code id="cmd-snapshot">npx deckwright snapshot &lt;collection address&gt; --chain liteforge</code><button type="button" class="copy" data-copy="cmd-snapshot" aria-label="Copy command">Copy</button></div>
-      <p>Reads any ERC-721 from chain: names, art and ERC-6699 stats. Then <code>import</code> makes the cards.</p>
-    </li>
-    <li>
-      <h3>Balance, play, ship</h3>
-      <div class="cmd"><code id="cmd-play">npm run sim &amp;&amp; npm run dev</code><button type="button" class="copy" data-copy="cmd-play" aria-label="Copy command">Copy</button></div>
-      <p>Bot-vs-bot balance numbers, a local site, then one static deploy. LitNode-ready rulesets for on-chain settlement.</p>
-    </li>
-  </ol>
-  <p class="links"><a class="forge" href="https://github.com/strodanodev/deckwright" rel="noopener">Get Deckwright on GitHub</a> <a class="ghost" href="https://github.com/strodanodev/deckwright#readme" rel="noopener">Read the guide</a></p>
-  <p class="fine">Rapture characters in this demo are © LitVM Games and not part of the open-source license. To use them in your own game, <a href="https://github.com/strodanodev/deckwright/issues/new?labels=rapture-license&amp;title=Rapture%20character%20use%20request" rel="noopener">request permission</a>.</p>
-</section>
-<!-- /deckwright:funnel -->
-
-<section id="deck" class="pick deckbuild" hidden aria-labelledby="deck-title">
-  <p class="kicker">Wallet deck</p>
-  <h2 id="deck-title">Build your deck</h2>
-  <p class="lede" id="deck-rule"></p>
-  <div class="deck-bar">
-    <span class="deck-count" id="deck-count" aria-live="polite"></span>
-    <button type="button" class="ghost" id="deck-wallet" hidden>Wallet deck</button>
-    <button type="button" class="ghost" id="deck-suggest">Suggested deck</button>
-    <button type="button" class="ghost" id="deck-clear">Clear</button>
-    <button type="button" class="ghost" id="deck-back">Back</button>
-    <button type="button" class="forge" id="deck-start" disabled>Start duel</button>
-  </div>
-  <div id="deck-cards" class="deck-cards"></div>
-</section>
-
-<section id="board" class="board" hidden aria-label="Duel board">
-  <div class="row foe-row">
-    <div class="hero" id="foe-hero"></div>
-    <div class="relics" id="foe-relics" aria-label="Opponent relics"></div>
-  </div>
-  <div class="lane foe-lane" id="foe-lane" aria-label="Opponent units"></div>
-  <p id="status" class="status" role="status" aria-live="polite"></p>
-  <div class="lane my-lane" id="my-lane" aria-label="Your units"></div>
-  <div class="row my-row">
-    <div class="hero" id="my-hero"></div>
-    <div class="relics" id="my-relics" aria-label="Your relics"></div>
-    <div class="controls" id="play-controls">
-      <button id="watch-link" class="ghost" type="button" hidden>Copy watch link</button>
-      <button id="end" class="forge" type="button">End turn</button>
-      <button id="concede" class="ghost" type="button">Concede</button>
+<div id="boot" role="progressbar" aria-label="Loading">
+  <div class="b-in">
+    <div class="b-emb">
+      <div class="b-glow"></div>
+      <svg class="b-spin" viewBox="0 0 120 120" fill="none" stroke="currentColor"><circle cx="60" cy="60" r="57" stroke-width="1" stroke-dasharray="2 6" /><path d="M60 1v12M60 107v12M1 60h12M107 60h12" stroke-width="2" /></svg>
+      <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-linejoin="round"><circle cx="60" cy="60" r="47" stroke-width="2.2" /><path d="M38 34h26a3 3 0 0 1 3 3v46a3 3 0 0 1-3 3H38a3 3 0 0 1-3-3V37a3 3 0 0 1 3-3z" transform="rotate(-12 51 60)" stroke-width="2.2" fill="currentColor" fill-opacity=".06" /><path d="M56 34h26a3 3 0 0 1 3 3v46a3 3 0 0 1-3 3H56a3 3 0 0 1-3-3V37a3 3 0 0 1 3-3z" transform="rotate(10 69 60)" stroke-width="2.2" fill="currentColor" fill-opacity=".12" /><path d="M69 48 78 60 69 72 60 60z" stroke-width="2.4" fill="currentColor" fill-opacity=".3" /></svg>
     </div>
-  </div>
-  <div class="hand" id="hand" aria-label="Your hand"></div>
-  <div class="viewbar" id="viewbar" hidden>
-    <div class="vb-steps" id="vb-steps" role="group" aria-label="Replay controls">
-      <button type="button" class="ghost" id="vb-start" aria-label="Back to the start" title="Start">&#x23EE;</button>
-      <button type="button" class="ghost" id="vb-prev-turn" aria-label="Previous turn" title="Previous turn">&#x00AB;</button>
-      <button type="button" class="ghost" id="vb-prev" aria-label="Previous move" title="Previous move (&#x2190;)">&#x2039;</button>
-      <button type="button" class="forge" id="vb-play" aria-label="Play">Play</button>
-      <button type="button" class="ghost" id="vb-next" aria-label="Next move" title="Next move (&#x2192;)">&#x203A;</button>
-      <button type="button" class="ghost" id="vb-next-turn" aria-label="Next turn" title="Next turn">&#x00BB;</button>
-      <button type="button" class="ghost" id="vb-end" aria-label="Jump to the end" title="End">&#x23ED;</button>
-    </div>
-    <input type="range" id="vb-scrub" min="0" max="0" value="0" aria-label="Move in the match" />
-    <span class="vb-pos" id="vb-pos" aria-live="polite"></span>
-    <div class="vb-more">
-      <button type="button" class="ghost" id="vb-flip">Flip view</button>
-      <button type="button" class="ghost" id="vb-share">Copy link</button>
-      <button type="button" class="ghost" id="vb-exit">Exit</button>
-    </div>
-  </div>
-</section>
-
-<div id="result" class="result" hidden role="dialog" aria-modal="true" aria-labelledby="result-title">
-  <div class="result-card">
-    <h2 id="result-title"></h2>
-    <p id="result-sub"></p>
-    <div class="result-actions">
-      <button id="again" class="forge" type="button">Rematch</button>
-      <button id="watch-replay" class="ghost" type="button">Watch replay</button>
-      <button id="share-replay" class="ghost" type="button">Share replay</button>
-      <button id="change" class="ghost" type="button">New champion</button>
-    </div>
-    <div class="share" id="share" hidden>
-      <label for="share-url">Replay link: anyone with it can watch this match, move by move.</label>
-      <div class="share-row"><input id="share-url" type="text" readonly /><button id="share-copy" class="ghost" type="button">Copy</button></div>
-    </div>
+    <h1>Deckwright</h1>
+    <div class="b-track"><div id="boot-bar"></div></div>
+    <p id="boot-text">Shuffling the deck</p>
   </div>
 </div>
 
+<noscript><p class="noscript">This game needs JavaScript.</p></noscript>
 <script type="module" src="./app.js"></script>
 </body>
 </html>

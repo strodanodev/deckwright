@@ -2,6 +2,32 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.7.0 (2026-10-24): the game client
+
+No rules change: every ruleset replays exactly as before. The web client is rebuilt as a game, in Rapture Chess's design.
+
+**Screens**
+- A boot screen and a title screen over a live arena: the gilded logo, the main menu, and a featured champion card with foil and tilt.
+- Champion select: framed cards by rarity, stat meters, the hero power, the battlefield, and the bot's strength (easy, normal, hard).
+- The deck forge: real card faces, your deck, a mana curve, and suggested or wallet decks.
+- The Gauntlet's road, the daily puzzle and the profile as their own pages, plus "Build your own" on the demo.
+- A versus loader (a two-player match waits there for the opponent), then the battle.
+- Gilded iris transitions between screens.
+
+**Battle**
+- Plates for both champions (portrait, life, energy, hero power, relics), a turn medallion and narration.
+- Arched unit tokens on the dais, and a fanned hand that lifts on hover.
+- The end-turn medallion, turn banners, damage floaters, the fallen feed, a battle menu (Esc), and the replay and spectator dock.
+- A result screen with the match in four numbers, your champion, Rematch, Watch replay and Share replay.
+
+**The arena:** Rapture Chess's two realms, Valhalla and the Underworld, as layered CSS and SVG: sky, aurora or lava glow, skyline, a perspective floor with the octagonal dais, pillars, braziers and embers. It needs no 3D engine.
+
+**Architecture**
+- `web/app.js` is now only the wiring: data, wallet, profile and the flows between screens.
+- `web/ui/`: a DOM helper, the router, the arena, the cards and one module per screen.
+- `web/styles/`: theme, arena, cards, screens and battle.
+- `web/meta.js` and `web/app.css` are gone. Scaffolded games get `ui/` and `styles/`. Without the funnel marker in `index.html`, the client leaves out "Build your own" and credits Deckwright on the title screen.
+
 ## 0.6.0 (2026-10-24): the meta loop
 
 No rules change: every ruleset replays exactly as before. Everything below runs in the browser, with no server.

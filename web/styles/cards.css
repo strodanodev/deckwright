@@ -1,0 +1,82 @@
+/* Cards: the game card (hand, forge, rewards, relics), the unit token on the board, and the champion card (Rapture
+ * Chess's framed card with its foil). Rarity colours the frame; the element (--el) tints the art and the gems. */
+
+[data-rarity='legendary'] { --rar: var(--r-legendary); }
+[data-rarity='epic'] { --rar: var(--r-epic); }
+[data-rarity='rare'] { --rar: var(--r-rare); }
+[data-rarity='uncommon'] { --rar: var(--r-uncommon); }
+[data-rarity='common'] { --rar: var(--r-common); }
+
+/* ------------------------------------------------------------------ the game card */
+.tcard { --rar: var(--r-common); --el: var(--neutral); --w: 150px; position: relative; display: block; width: var(--w); aspect-ratio: 5 / 7; padding: 3px; border: 0; border-radius: 9px; color: var(--text); text-align: left; flex: none;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--rar) 90%, white), color-mix(in srgb, var(--rar) 50%, black) 45%, color-mix(in srgb, var(--rar) 85%, white) 100%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.7); font-size: calc(var(--w) * 0.0733); transition: transform 0.22s var(--ease-out), box-shadow 0.22s, filter 0.22s; }
+.tc-frame { position: relative; height: 100%; border-radius: 7px; overflow: hidden; display: grid; grid-template-rows: 52% auto auto 1fr; background: linear-gradient(180deg, #17121e, #0b0910); }
+.tc-art { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 45%, #1a1420), #0a080d 75%); display: grid; place-items: center; color: var(--el); }
+.tc-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
+.tc-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, rgba(11, 9, 16, 0.9)); }
+.tc-art .glyph { width: 46%; height: 46%; opacity: 0.85; filter: drop-shadow(0 0 12px currentColor); }
+.tc-name { position: relative; z-index: 1; margin: -1.25em 6px 0; padding: 0.3em 0.5em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.08em; letter-spacing: 0.04em; line-height: 1.15; color: var(--ivory);
+  background: linear-gradient(180deg, #2a2133, #120e18); border: 1px solid color-mix(in srgb, var(--rar) 60%, transparent); border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px #000; }
+.tc-type { padding: 0.35em 0.6em 0; text-align: center; font-size: 0.78em; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in srgb, var(--el) 70%, var(--muted)); }
+.tc-text { padding: 0.25em 0.75em 0.6em; display: grid; align-content: center; gap: 0.15em; text-align: center; font-size: 0.92em; line-height: 1.3; color: #e2d9c8; overflow: hidden; }
+.tc-text p { margin: 0; }
+.tc-cost, .tc-atk, .tc-hp { position: absolute; z-index: 3; display: grid; place-items: center; width: 2.6em; height: 2.6em; font-family: var(--font-display); font-weight: 700; font-size: 1.3em; color: #fff; text-shadow: 0 1px 3px #000; }
+.tc-cost { top: -0.35em; left: -0.35em; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #c9ecff, #2f8fe0 45%, #0d3a70 80%); box-shadow: 0 0 0 2px #0b0910, 0 0 0 3.5px color-mix(in srgb, var(--rar) 80%, white), 0 4px 10px rgba(0, 0, 0, 0.6); }
+.tc-atk { bottom: -0.35em; left: -0.35em; clip-path: polygon(50% 0, 100% 30%, 82% 100%, 18% 100%, 0 30%); background: radial-gradient(circle at 40% 30%, #ffe2a0, #d9982f 50%, #6a4010 90%); }
+.tc-hp { bottom: -0.35em; right: -0.35em; border-radius: 50% 50% 45% 45% / 40% 40% 60% 60%; background: radial-gradient(circle at 40% 30%, #ffb3a0, #d5301c 50%, #5a0a04 90%); }
+.tc-gem { position: absolute; z-index: 2; left: 50%; top: 52%; width: 0.9em; height: 0.9em; margin: -0.45em 0 0 -0.45em; transform: rotate(45deg); background: radial-gradient(circle at 35% 30%, white, var(--rar) 55%, color-mix(in srgb, var(--rar) 50%, black)); box-shadow: 0 0 8px var(--rar); }
+.tcard .foil, .ccard .foil { position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: 0; mix-blend-mode: color-dodge; transition: opacity 0.3s;
+  background: linear-gradient(115deg, transparent 25%, rgba(255, 120, 200, 0.35) 38%, rgba(120, 220, 255, 0.35) 50%, rgba(255, 240, 140, 0.35) 62%, transparent 75%); background-size: 250% 250%; background-position: var(--fx, 50%) var(--fy, 50%); }
+.tcard[data-rarity='legendary'] .foil { opacity: 0.35; }
+.tcard.t-spell .tc-frame { background: linear-gradient(180deg, #161a2a, #0a0b14); }
+.tcard.t-relic .tc-frame { background: linear-gradient(180deg, #1e1a10, #0d0b06); }
+.tcard.t-spell .tc-art, .tcard.t-relic .tc-art { border-radius: 0 0 45% 45% / 0 0 18% 18%; }
+button.tcard:not(:disabled):hover { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 26px color-mix(in srgb, var(--rar) 45%, transparent); }
+button.tcard:disabled { cursor: default; filter: saturate(0.4) brightness(0.6); }
+.tcard.small { --w: 64px; }
+.tcard.small .tc-text, .tcard.small .tc-type, .tcard.small .tc-gem { display: none; }
+.tcard.small .tc-frame { grid-template-rows: 1fr auto; }
+.tcard.small .tc-name { margin: 0; border-radius: 0; font-size: 0.85em; }
+
+/* ------------------------------------------------------------------ the unit token on the board */
+.unit { --rar: var(--r-common); --el: var(--neutral); --u: clamp(60px, 11vh, 96px); position: relative; width: var(--u); height: calc(var(--u) * 1.22); padding: 0; border: 0; background: none; color: var(--text); flex: none; transition: transform 0.22s var(--ease-out), filter 0.22s; }
+.u-ring { position: absolute; inset: 0 0 8% 0; padding: 3px; border-radius: 48% 48% 14% 14% / 40% 40% 12% 12%; background: linear-gradient(160deg, color-mix(in srgb, var(--rar) 90%, white), color-mix(in srgb, var(--rar) 45%, black) 50%, color-mix(in srgb, var(--rar) 80%, white));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.7); }
+.u-art { position: relative; width: 100%; height: 100%; border-radius: inherit; overflow: hidden; display: grid; place-items: center; color: var(--el); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 45%, #1a1420), #0a080d 75%); }
+.u-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+.u-art .glyph { width: 46%; height: 46%; }
+.u-atk, .u-hp { position: absolute; bottom: 0; z-index: 2; display: grid; place-items: center; width: 30px; height: 30px; font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; }
+.u-atk { left: -4px; clip-path: polygon(50% 0, 100% 30%, 82% 100%, 18% 100%, 0 30%); background: radial-gradient(circle at 40% 30%, #ffe2a0, #d9982f 50%, #6a4010 90%); }
+.u-hp { right: -4px; border-radius: 50% 50% 45% 45% / 40% 40% 60% 60%; background: radial-gradient(circle at 40% 30%, #ffb3a0, #d5301c 50%, #5a0a04 90%); }
+.u-atk.up, .u-hp.up { color: #b8ffcc; }
+.u-hp.hurt { color: #ffd0c8; }
+.u-name { position: absolute; left: 14%; right: 14%; bottom: 0; height: 18px; display: none; }
+.u-kw { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 3px; }
+.u-kw i { font-style: normal; font-size: 8.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 5px; border-radius: 2px; color: #201404; background: var(--gold-1); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); white-space: nowrap; }
+/* guard: a shield-shaped gilded border; shield: a bubble; tired: dimmed */
+.unit.guard .u-ring { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6), 0 0 0 3px #c9c2b0, 0 0 0 5px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 240, 200, 0.35); border-radius: 30% 30% 46% 46% / 22% 22% 46% 46%; }
+.unit.shielded::after { content: ''; position: absolute; inset: -6px -6px 2% -6px; border-radius: 50%; border: 2px solid rgba(255, 236, 160, 0.85); background: radial-gradient(circle, transparent 55%, rgba(255, 220, 120, 0.25)); box-shadow: 0 0 16px rgba(255, 220, 120, 0.6); pointer-events: none; z-index: 3; }
+.unit.tired .u-art { filter: saturate(0.45) brightness(0.65); }
+
+/* ------------------------------------------------------------------ the champion card */
+.ccard { --rar: var(--r-common); --el: var(--gold-2); position: relative; display: block; width: 100%; aspect-ratio: 5 / 7; border-radius: 8px; padding: 3px; color: var(--text); text-align: left; border: 0;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--rar) 90%, white), color-mix(in srgb, var(--rar) 55%, black) 45%, color-mix(in srgb, var(--rar) 85%, white) 100%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.6); transform-style: preserve-3d; transition: transform 0.25s var(--ease-out), box-shadow 0.25s; }
+.ccard .inner { position: relative; height: 100%; border-radius: 6px; overflow: hidden; background: #0c0a10; display: grid; grid-template-rows: 1fr auto; }
+.ccard .art { position: relative; overflow: hidden; display: grid; place-items: center; color: var(--gold-3); }
+.ccard .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ccard .art > svg { width: 50%; }
+.ccard .art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(8, 6, 12, 0.95)); }
+.ccard .gem { position: absolute; top: 8px; right: 8px; z-index: 2; width: 20px; height: 20px; transform: rotate(45deg); border: 2px solid rgba(255, 255, 255, 0.75); background: radial-gradient(circle at 35% 30%, white, var(--el) 45%, color-mix(in srgb, var(--el) 50%, black)); box-shadow: 0 0 12px var(--el); }
+.ccard .kind { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 9px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 7px; border-radius: 2px; color: #120d04; background: var(--rar); }
+.ccard .cplate { position: relative; z-index: 1; margin-top: -34px; padding: 8px 10px 10px; }
+.ccard .name { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; color: var(--ivory); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9); line-height: 1.15; }
+.ccard .sub { margin-top: 3px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.ccard .owned { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 3; }
+.ccard[data-rarity='legendary'] .foil { opacity: 0.4; }
+.ccard:hover .foil, .ccard.tilt .foil, .tcard.tilt .foil { opacity: 0.85; }
+button.ccard:hover { box-shadow: 0 22px 46px rgba(0, 0, 0, 0.6), 0 0 30px color-mix(in srgb, var(--rar) 45%, transparent); }
+.ccard.base { background: linear-gradient(160deg, var(--gold-1), var(--gold-4) 45%, var(--gold-2)); }
+.ccard.base .inner { background: radial-gradient(circle at 50% 45%, #2b1d36, #0b0810 70%); display: grid; place-items: center; color: var(--gold-2); }
+.ccard.base .inner svg { width: 56%; }

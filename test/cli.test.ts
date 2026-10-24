@@ -23,7 +23,7 @@ test('create scaffolds a playable project with the skill and a built site', () =
     const target = join(dir, 'Space Duel');
     const r = cli('create', target, '--title', 'Space Duel', '--sdk', 'file:../deckwright');
     assert.equal(r.status, 0, r.stderr);
-    for (const f of ['games/space-duel.game.json', 'web/index.html', 'web/app.js', 'web/meta.js', 'web/lib/wallet.js', 'web/engine/deckwright.js', 'web/data/game.json', 'web/data/collection.json', 'vercel.json', 'gauntlet.json', '.claude/skills/deckwright/SKILL.md', 'README.md']) {
+    for (const f of ['games/space-duel.game.json', 'web/index.html', 'web/app.js', 'web/ui/screens/match.js', 'web/styles/theme.css', 'web/lib/wallet.js', 'web/engine/deckwright.js', 'web/data/game.json', 'web/data/collection.json', 'vercel.json', 'gauntlet.json', '.claude/skills/deckwright/SKILL.md', 'README.md']) {
       assert.ok(existsSync(join(target, f)), f);
     }
     const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'));
