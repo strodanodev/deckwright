@@ -90,14 +90,16 @@ export function deckScreen(app) {
     h("div", { class: "forge-wrap" },
       h("div", { class: "forge-cards" }, typeSeg, grid),
       h("aside", { class: "deck-panel panel frame" },
-        h("div", { class: "panel-head" }, h("h2", { text: "Your deck" }), h("span", { class: "deck-count" }, count)),
+        // on a phone the panel is a sheet along the bottom: the head opens the list, To battle always shows
+        h("div", { class: "panel-head" }, h("h2", { text: "Your deck" }), h("span", { class: "deck-count" }, count),
+          h("button", { class: "icon-btn sm sheet-toggle", type: "button", aria: { label: "Show the deck list", expanded: "false" }, on: { click: (e) => { const open = e.currentTarget.closest(".deck-panel").classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded", String(open)); } } }, icon("next"))),
         h("div", { class: "panel-body" },
           h("div", { class: "meter deck-meter" }, meter),
           curve,
           list,
           rule,
-          h("div", { class: "deck-tools" }, btn("Suggested", "spark", () => { suggest(); render(); }), walletBtn, btn("Clear", "close", () => { deck = []; render(); })),
-          start))));
+          h("div", { class: "deck-tools" }, btn("Suggested", "spark", () => { suggest(); render(); }), walletBtn, btn("Clear", "close", () => { deck = []; render(); }))),
+        h("div", { class: "panel-foot" }, start))));
   app.onWallet(() => { if (!el.hidden) render(); });
 
   return {

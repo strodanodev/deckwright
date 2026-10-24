@@ -111,17 +111,22 @@
 
 /* ------------------------------------------------------------------ menu pages */
 .page { display: grid; grid-template-rows: auto 1fr; }
-.page-scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(5, 4, 9, 0.88), rgba(5, 4, 9, 0.62) 30%, rgba(5, 4, 9, 0.72) 70%, rgba(5, 4, 9, 0.92)); }
+.page-scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 30%, rgba(5, 4, 9, 0.6)), linear-gradient(180deg, rgba(5, 4, 9, 0.92), rgba(5, 4, 9, 0.76) 30%, rgba(5, 4, 9, 0.8) 70%, rgba(5, 4, 9, 0.95)); }
 .page-head { position: relative; z-index: 1; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; padding: calc(var(--safe-t) + 16px) calc(var(--safe-r) + 28px) 12px calc(var(--safe-l) + 28px); }
 .page-title { display: grid; gap: 2px; min-width: 0; }
 .page-title h1 { margin: 0; font-size: clamp(20px, 2.6vw, 30px); letter-spacing: 0.12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-right { display: flex; gap: 10px; align-items: center; }
-.page-wrap { position: relative; z-index: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px calc(var(--safe-r) + 28px) calc(var(--safe-b) + 28px) calc(var(--safe-l) + 28px); }
+.page-wrap { position: relative; z-index: 1; display: grid; align-content: safe center; overflow-y: auto; overscroll-behavior: contain; padding: 8px calc(var(--safe-r) + 28px) calc(var(--safe-b) + 28px) calc(var(--safe-l) + 28px); }
 @media (max-width: 760px) {
   .page-head { padding: calc(var(--safe-t) + 10px) 14px 8px; gap: 10px; }
   .page-right .wallet-chip { padding: 3px; }
   .page-right .wc-text { display: none; }
-  .page-wrap { padding: 4px 14px calc(var(--safe-b) + 20px); }
+  .page-wrap { padding: 4px 14px calc(var(--safe-b) + 20px); align-content: start; }
+  .page-title h1 { font-size: clamp(18px, 5.6vw, 26px); letter-spacing: 0.06em; white-space: normal; line-height: 1.05; }
+  .page-title .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* stat grids: two columns, and an odd last tile spans both */
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .tiles > .tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 /* ------------------------------------------------------------------ champion select */
@@ -136,7 +141,7 @@
 .champ-grid .ccard.chosen { box-shadow: 0 0 0 2px var(--gold-1), 0 0 30px rgba(255, 201, 94, 0.55), 0 14px 34px rgba(0, 0, 0, 0.55); }
 .champ-grid .empty { grid-column: 1 / -1; }
 .champ-detail { display: grid; grid-template-rows: auto 1fr; align-self: start; max-height: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
-.cd-body > .btn.block { position: sticky; bottom: 0; z-index: 3; box-shadow: 0 -12px 24px rgba(10, 8, 14, 0.9); }
+.cta-dock { position: sticky; bottom: 0; z-index: 3; margin: 0 -20px -16px; padding: 14px 20px 16px; background: linear-gradient(180deg, transparent, rgba(14, 11, 19, 0.97) 18px); }
 .cd-card { width: min(170px, 50%); justify-self: center; margin: 16px 0 0; perspective: 900px; }
 .cd-body { display: grid; gap: 10px; padding: 10px 20px 16px; }
 .cd-name { margin: 0; font-size: 22px; letter-spacing: 0.1em; }
@@ -149,10 +154,15 @@
 .cd-power b { font-family: var(--font-display); letter-spacing: 0.08em; color: var(--gold-1); }
 @media (max-width: 900px) {
   .select-wrap { grid-template-columns: 1fr; overflow-y: auto; padding: 4px 14px calc(var(--safe-b) + 20px); }
-  .select-list { grid-row: 2; }
   .champ-grid { overflow: visible; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
   .champ-detail { overflow: visible; max-height: none; }
   .cd-card { width: 140px; margin-top: 12px; }
+  /* the collection becomes a strip along the top; the chosen champion's details follow */
+  .select-list { grid-row: 1; }
+  .champ-grid { grid-auto-flow: column; grid-auto-columns: 104px; grid-template-columns: none; overflow-x: auto; overflow-y: hidden; padding: 8px 2px 12px; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .champ-grid > * { scroll-snap-align: start; }
+  .champ-detail { grid-row: 2; }
+  .cd-card { display: none; }
 }
 
 /* ------------------------------------------------------------------ the deck forge */
@@ -171,8 +181,11 @@
 .ft-note { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .ft-note.held { color: var(--ok); }
 .deck-panel { display: flex; flex-direction: column; min-height: 0; align-self: start; max-height: 100%; }
-.deck-panel .panel-body { display: grid; gap: 12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
-.deck-panel .panel-body > .btn.block { position: sticky; bottom: 0; z-index: 3; box-shadow: 0 -12px 24px rgba(10, 8, 14, 0.9); }
+.deck-panel .panel-body { flex: 1 1 auto; min-height: 0; display: grid; gap: 12px; align-content: start; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.panel-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line); }
+.sheet-toggle { display: none; margin-left: 4px; }
+.sheet-toggle svg { transform: rotate(-90deg); transition: transform 0.25s var(--ease-out); }
+.deck-panel.open .sheet-toggle svg { transform: rotate(90deg); }
 .deck-count { margin-left: auto; font-family: var(--font-display); font-size: 16px; color: var(--ivory); }
 .deck-meter { height: 4px; }
 .curve { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; height: 70px; align-items: end; }
@@ -196,9 +209,22 @@
   .forge-grid { overflow: visible; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 8px; padding: 10px 0; }
   .forge-tile .tcard { --w: 104px; }
 }
+@media (max-width: 760px) {
+  /* the deck is a sheet along the bottom: head and To battle always, the list on demand */
+  .deck-panel { grid-row: 2; position: sticky; bottom: 0; z-index: 4; max-height: 78vh; margin: 0 -6px; box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.7); }
+  .deck-panel .panel-head { padding: 10px 14px; }
+  .deck-panel:not(.open) .panel-body { display: none; }
+  .deck-panel .deck-list { max-height: 34vh; }
+  .panel-foot { padding: 10px 14px 12px; }
+  .panel-foot .btn { --h: 50px; }
+  .sheet-toggle { display: inline-grid; width: 34px; height: 34px; }
+  .forge-wrap { padding-bottom: 0; }
+  .deck-panel { padding-bottom: var(--safe-b); }
+  .forge-grid { padding-bottom: 20px; }
+}
 
 /* ------------------------------------------------------------------ the Gauntlet, puzzle and profile */
-.meta-body { display: grid; gap: 18px; max-width: 980px; margin: 0 auto; }
+.meta-body { display: grid; gap: 18px; width: 100%; max-width: 980px; margin: 0 auto; }
 .meta-body.narrow { max-width: 620px; }
 .meta-panel .panel-body.stack, .meta-panel .stack { display: grid; gap: 14px; }
 .road { list-style: none; margin: 0; padding: 6px 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; position: relative; }
@@ -242,8 +268,9 @@
 .champ-records img, .champ-records svg { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-strong); }
 .champ-records b { font-family: var(--font-display); color: var(--gold-1); }
 @media (max-width: 760px) {
-  .road { grid-template-columns: repeat(4, 1fr); row-gap: 14px; }
-  .road::before { display: none; }
+  .road { display: flex; overflow-x: auto; scrollbar-width: none; padding: 6px 4px; }
+  .road li { flex: 0 0 62px; }
+  .road::before { left: 30px; right: auto; width: calc(62px * 7); }
   .stage-body { grid-template-columns: 1fr; justify-items: center; }
   .stage-foe { width: 150px; }
   .profile-cols { grid-template-columns: 1fr; }
@@ -295,7 +322,8 @@
 .vs-rune svg { width: 18px; height: 18px; color: var(--gold-3); animation: spin 6s linear infinite; }
 @media (max-width: 760px) {
   .versus { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-  .vs-side { padding: 0 0 16px; }
+  .vs-side.you { padding: 0 0 calc(clamp(64px, 11vw, 150px) * 0.75); }
+  .vs-side.foe { padding: 0 0 calc(var(--safe-b) + 128px); }
   .vs-mark { top: 50%; }
   .crest.lg { width: 44px; height: 44px; }
   .vs-foot { bottom: calc(var(--safe-b) + 14px); }

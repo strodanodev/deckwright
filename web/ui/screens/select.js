@@ -54,10 +54,10 @@ export function selectScreen(app) {
         stats(c),
         power ? h("div", { class: "cd-power" }, h("span", { class: "eyebrow" }, "Hero power"), h("p", null, h("b", { text: `${power.name} · ${power.cost}` }), h("span", { text: power.text }))) : null,
         h("div", { class: "field" }, h("span", { text: `Battlefield · ${REALMS[shownRealm].name}` }),
-          seg([["auto", "By champion"], ["valhalla", REALMS.valhalla.name], ["underworld", REALMS.underworld.name]], realmChoice, (v) => { app.setPref("realm", v); renderDetail(); })),
+          seg([["auto", "Auto"], ["valhalla", REALMS.valhalla.name], ["underworld", REALMS.underworld.name]], realmChoice, (v) => { app.setPref("realm", v); renderDetail(); })),
         mode !== "relay" ? h("div", { class: "field" }, h("span", { text: mode === "gauntlet" ? "Foes get stronger each stage" : "House bot" }),
           mode === "practice" ? seg(LEVELS, app.prefs.level, (v) => { app.setPref("level", v); renderDetail(); }) : null) : null,
-        confirm));
+        h("div", { class: "cta-dock" }, confirm)));
     confirm.replaceChildren(icon("swords"), MODE_COPY[mode][2]);
   }
 

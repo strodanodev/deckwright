@@ -295,9 +295,9 @@ app.flows = {
       : s.winner === 2 ? "Draw" : watching ? `${name(s.p[s.winner].id)} wins` : s.winner === meIdx ? "Victory" : "Defeat";
     const sub = puzzleState
       ? (puzzleState === "solved" ? `${session.actions} actions. The bot needed ${session.puzzle.par}.` : "Your turn ended without a win. Try another line.")
-      : `${s.turnNo} turns · ${watching ? `${name(me.id)} ${me.life} life · ${name(foe.id)} ${foe.life} life` : `${me.life} life left`}${kind === "relay" && !watching ? ` · ${session.status}` : ""}${kind === "gauntlet" ? ` · ${context.detail}` : ""}`;
+      : `${watching ? `${name(me.id)} ${me.life} life · ${name(foe.id)} ${foe.life} life` : `${me.life} life left`}${kind === "relay" && !watching ? ` · ${session.status}` : ""}${kind === "gauntlet" ? ` · ${context.detail}` : ""}`;
     const watchReplay = { text: "Watch replay", icon: "replay", onClick: async () => { const rec = session.record(); const code = await encodeRecord(rec); history.replaceState(null, "", `${location.pathname}${location.search}#${REPLAY_PARAM}=${code}`); await startReplay(rec, code); } };
-    const menu = { text: "Menu", icon: "back", onClick: () => void app.flows.leaveMatch() };
+    const menu = { text: "Menu", icon: "back", link: true, onClick: () => void app.flows.leaveMatch() };
     let buttons;
     if (watching) buttons = [watchReplay, { text: "Leave", icon: "close", onClick: () => void app.flows.exitView() }];
     else if (kind === "puzzle") buttons = puzzleState === "solved" ? [{ text: "Back to the puzzle", icon: "puzzle", primary: true, onClick: () => void app.flows.leaveMatch() }] : [{ text: "Retry", icon: "refresh", primary: true, onClick: () => { recorded = false; match.retry(); } }, menu];

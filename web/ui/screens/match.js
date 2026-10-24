@@ -16,7 +16,7 @@ export function matchScreen(app) {
     const portrait = h("button", { class: "pl-face", type: "button" });
     const life = h("div", { class: "pl-life tabnum" });
     const name = h("span", { class: "pl-name" });
-    const sub = h("span", { class: "pl-sub" });
+    const sub = h("span", { class: "pl-chips" });
     const energy = h("div", { class: "pl-energy" });
     const power = h("div", { class: "pl-power" });
     const relics = h("div", { class: "pl-relics" });
@@ -33,6 +33,12 @@ export function matchScreen(app) {
   const endBtn = h("button", { class: "end-turn", type: "button", on: { click: () => act(endTurn()) } }, h("span", { class: "et-ring" }), h("span", { class: "et-label display", text: "End turn" }));
   const menuBtn = h("button", { class: "icon-btn", type: "button", title: "Battle menu (Esc)", aria: { label: "Battle menu" }, on: { click: () => openMenu() } }, icon("menu"));
   const dock = h("div", { class: "dock" }, menuBtn, endBtn);
+  // On a phone, End turn sits in your plate and the menu in the enemy's, clear of the board.
+  const phone = matchMedia("(max-width: 760px)");
+  const placeControls = () => {
+    if (phone.matches) { meP.el.append(endBtn); foeP.el.append(menuBtn); } else dock.append(menuBtn, endBtn);
+  };
+  phone.addEventListener("change", placeControls);
   const feed = h("div", { class: "killfeed", aria: { live: "polite" } });
   const cineWord = h("b", { class: "display" });
   const cineSub = h("span");
@@ -93,9 +99,38 @@ export function matchScreen(app) {
         h("div", { class: "panel-body pause-body" },
           h("button", { class: "btn primary block", type: "button", on: { click: close } }, icon("play"), "Resume"),
           ...rows,
-          h("p", { class: "hint", text: `${ctx.label ?? "Match"} · ${game.title} · ${game.litnode.rulesetId}` }))));
+          h("p", { class: "hint", text: `${ctx.label ?? "Match"} · ${game.title}` }))));
     el.append(menu);
   }
+
+  // ------------------------------------------------------------------ inspect: hold (touch) or right-click any card to read it
+  let inspector = null;
+  function inspect(def) {
+    inspector?.remove();
+    const big = app.cards.cardFace(def);
+    big.classList.add("inspect-card");
+    inspector = h("div", { class: "inspect", role: "dialog", aria: { label: def.name }, on: { pointerdown: () => { inspector?.remove(); inspector = null; } } },
+      big, h("p", { class: "hint", text: "Tap anywhere to close" }));
+    el.append(inspector);
+  }
+  function inspectable(node, def) {
+    node.addEventListener("contextmenu", (e) => { e.preventDefault(); inspect(def); });
+    let timer = 0, held = false;
+    node.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse") return;
+      held = false;
+      timer = setTimeout(() => { held = true; inspect(def); }, 450);
+    });
+    const cancel = () => clearTimeout(timer);
+    node.addEventListener("pointerup", cancel);
+    node.addEventListener("pointerleave", cancel);
+    node.addEventListener("pointercancel", cancel);
+    // a hold opens the card; the click that ends it must not also play or pick it
+    node.addEventListener("click", (e) => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    return node;
+  }
+  /** Empty slot plates after a side's units, so the board shows its shape even when empty. */
+  const slots = (used) => Array.from({ length: Math.max(0, (game.rules.boardSlots ?? 5) - used) }, () => h("div", { class: "slot", aria: { hidden: "true" } }));
 
   // ------------------------------------------------------------------ helpers
   const act = (x) => { pick = null; session?.act(x); };
@@ -183,7 +218,11 @@ export function matchScreen(app) {
     P.life.textContent = String(p.life);
     P.life.classList.toggle("low", p.life <= Math.max(5, Math.round(p.maxLife * 0.25)));
     P.name.textContent = champ ? `${label} · ${champ.name}` : label;
-    P.sub.textContent = `deck ${p.deck.length} · hand ${p.hand.length}${p.spellPower ? ` · spell +${p.spellPower}` : ""}${p.unitAttack ? ` · units +${p.unitAttack}` : ""}`;
+    P.sub.replaceChildren(...[
+      h("span", { class: "chip-mini", title: `${p.deck.length} cards left in the deck` }, h("i", { class: "cardback" }), h("b", { class: "tabnum", text: p.deck.length })),
+      h("span", { class: "chip-mini", title: `${p.hand.length} cards in hand` }, icon("cards"), h("b", { class: "tabnum", text: p.hand.length })),
+      p.spellPower ? h("span", { class: "chip-mini buff", title: `Spell power +${p.spellPower}` }, icon("spark"), h("b", { text: `+${p.spellPower}` })) : null,
+      p.unitAttack ? h("span", { class: "chip-mini buff", title: `Unit attack +${p.unitAttack}` }, icon("sword"), h("b", { text: `+${p.unitAttack}` })) : null].filter(Boolean));
     const n = Math.max(p.energyCap, p.energy);
     P.energy.replaceChildren(...Array.from({ length: n }, (_, i) => h("i", { class: i < p.energy ? "full" : "" })), h("span", { class: "tabnum", text: `${p.energy}/${p.energyCap}` }));
     P.energy.title = `energy ${p.energy}/${p.energyCap}`;
@@ -201,7 +240,7 @@ export function matchScreen(app) {
       });
       P.power.append(b);
     }
-    P.relics.replaceChildren(...p.relics.map((c) => app.cards.cardFace(game.cards[c], { small: true })));
+    P.relics.replaceChildren(...p.relics.map((c) => inspectable(app.cards.cardFace(game.cards[c], { small: true }), game.cards[c])));
   }
 
   // ------------------------------------------------------------------ render
@@ -258,13 +297,13 @@ export function matchScreen(app) {
     meP.el.classList.toggle("active", !s.over && s.turn === meIdx);
 
     foeLane.replaceChildren(...foe.board.map((u, slot) => {
-      const b = app.cards.unitToken(game.cards[u.c], u);
+      const b = inspectable(app.cards.unitToken(game.cards[u.c], u), game.cards[u.c]);
       const x = targets.get(enemyUnit(slot));
       if (x !== undefined) { b.classList.add("target"); b.addEventListener("click", () => act(x)); }
       return b;
-    }));
+    }), ...slots(foe.board.length));
     myLane.replaceChildren(...me.board.map((u, slot) => {
-      const b = app.cards.unitToken(game.cards[u.c], u);
+      const b = inspectable(app.cards.unitToken(game.cards[u.c], u), game.cards[u.c]);
       const buff = targets.get(ownUnit(slot));
       const canAttack = moves.some((m) => m.op === Op.Attack && m.a === slot);
       if (buff !== undefined) { b.classList.add("target", "ally"); b.addEventListener("click", () => act(buff)); }
@@ -274,11 +313,11 @@ export function matchScreen(app) {
         b.addEventListener("click", () => { pick = pick?.kind === "unit" && pick.index === slot ? null : { kind: "unit", index: slot }; render(); });
       }
       return b;
-    }));
+    }), ...slots(me.board.length));
     const n = me.hand.length;
     hand.replaceChildren(...me.hand.map((c, index) => {
       const def = game.cards[c];
-      const b = app.cards.cardFace(def, { tag: "button" });
+      const b = inspectable(app.cards.cardFace(def, { tag: "button" }), def);
       b.style.setProperty("--i", String(index - (n - 1) / 2));
       const plays = moves.filter((m) => m.op === Op.Play && m.a === index);
       if (watching) return b;   // spectators and replays see the hand (open information) but don't play it
@@ -338,7 +377,7 @@ export function matchScreen(app) {
 
   document.addEventListener("keydown", (e) => {
     if (el.hidden || e.target instanceof HTMLInputElement) return;
-    if (e.key === "Escape") { if (pick) { pick = null; render(); } else if (menu) { menu.remove(); menu = null; } else openMenu(); return; }
+    if (e.key === "Escape") { if (inspector) { inspector.remove(); inspector = null; } else if (pick) { pick = null; render(); } else if (menu) { menu.remove(); menu = null; } else openMenu(); return; }
     if (!replaying()) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); stepTo(session.cursor - 1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stepTo(session.cursor + 1); }
@@ -359,6 +398,7 @@ export function matchScreen(app) {
       dock.hidden = viewing();
       el.classList.toggle("viewing", viewing());
       session.onChange(render);
+      placeControls();
       render();
     },
     detach() { session?.close?.(); session = null; menu?.remove(); menu = null; },
