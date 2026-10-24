@@ -341,5 +341,7 @@ if (!opened) {
 // Measured (scripts/profile-web.mjs --gpu --detail): about 0.3-0.45 s of main-thread work, once, so it waits for an
 // idle moment rather than landing on the player's first click.
 const upgradeArena = () => { void arena.upgrade().then((ok) => { if (ok) performance.mark("tessaract:arena3d"); }); };
-setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(upgradeArena, { timeout: 2000 }) : upgradeArena()), 400);
+// ?arena=css keeps the CSS arena (for comparisons, and for players who prefer it).
+if (q.get("arena") === "css") document.getElementById("arena").dataset.fallback = "turned off (?arena=css)";
+else setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(upgradeArena, { timeout: 2000 }) : upgradeArena()), 400);
 window.tessaract = { arenaStats: () => arena.stats() };
