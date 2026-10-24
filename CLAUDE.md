@@ -15,4 +15,6 @@ Checks before committing:
 - The meta loop (`src/meta`: profile, Gauntlet, daily puzzle) never changes rules. Rewards are champion stats and declared decks, so every match replays under the game's `rulesetId`.
 - If you change Gauntlet tuning, re-check the stage-by-stage win rates with a normal-bot player before shipping.
 - Add the release to `CHANGELOG.md`.
+- After any change to `src/arena3d`, run `pnpm arena3d`; CI fails when `web/arena3d.js` is stale.
+- Measure web changes with `node scripts/profile-web.mjs <url> --runs 5` (software WebGL: the CSS fallback path) and `--gpu` (the 3D arena). Keep long tasks after the title near zero on the fallback path.
 - Bump `version` in both `package.json` and `plugin/.claude-plugin/plugin.json` (and the marketplace entry) when releasing.

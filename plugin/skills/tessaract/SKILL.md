@@ -126,7 +126,10 @@ npx tessaract dev                                 # serves http://127.0.0.1:4173
   - check the browser console has no errors.
 - The client is a game, not a page: a title screen, champion select, the deck forge, a versus loader, the battle HUD and a result screen, over an arena backdrop. To restyle it to the theme:
   - **Colours and fonts:** the `:root` tokens in `web/styles/theme.css` (gold, panels, rarity colours). Element colours come from `elements[].color` in the game file; set them, and every card, gem and plate follows.
-  - **The arena:** `web/ui/arena.js` and `web/styles/arena.css`. There are two realms: `valhalla` (stone and aurora) and `underworld` (basalt and lava). Champions pick one by faction or element, and players can choose on champion select. Retune the realm's CSS variables (`--sky-*`, `--stone`, `--dais-ring`, `--fire`) for a new look.
+  - **The arena:** there are two realms, `valhalla` (stone and aurora) and `underworld` (basalt and lava). Champions pick one by faction or element, and players can choose on champion select.
+    - **The CSS arena** (`web/ui/arena.js`, `web/styles/arena.css`) always works. Retune its CSS variables (`--sky-*`, `--stone`, `--dais-ring`, `--fire`) for a new look.
+    - **The 3D arena** (`web/arena3d.js`, built from `src/arena3d`) replaces it when the game ships arena models at `web/assets/arena/valhalla.glb` and `underworld.glb`. It loads after the title screen, and only on a real GPU. A new game ships no models, so it shows the CSS arena. The Tessaract demo uses Rapture Chess's arenas, which are © LitVM Games and not for reuse.
+    - **Your own models:** export each from Blender as GLB, then make it decoder-free (no Draco, so no extra security-policy rules): `npx @gltf-transform/cli copy in.glb plain.glb`, then `npx @gltf-transform/cli quantize plain.glb web/assets/arena/<realm>.glb`. Material names drive the look: `lava`, `fire`, `ember`, `rune`, `crystal`, `gold`, `stone` and so on (see `src/arena3d/realm.ts`).
   - **Text:** the title screen uses the game's `title` (the last word becomes the gilded subtitle) and the collection's name. Change the `<title>` and description in `web/index.html`.
   - **Layout:** each screen is one module in `web/ui/screens/`; cards are drawn in `web/ui/cards.js`.
 - Keep the page's safety rules:

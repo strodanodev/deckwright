@@ -2,7 +2,7 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
-## 0.8.0 (2026-10-24): Deckwright is now Tessaract
+## 0.9.0 (2026-10-24): Deckwright is now Tessaract
 
 No rules change: every ruleset replays exactly as before.
 
@@ -10,11 +10,42 @@ No rules change: every ruleset replays exactly as before.
   - `deckwright` still works as a CLI alias, and GitHub redirects the old repo URL.
   - Browser storage keys keep their `deckwright.` prefix, so players keep their decks, profiles and settings.
 - **Products moved out:** Tessaract is the SDK only.
-  - The Rapture game, its art and its collection snapshot moved to Rapture TCG (github.com/strodanodev/rapture-tcg).
+  - The Rapture game, its art, its collection snapshot and the arena models moved to Rapture TCG (github.com/strodanodev/rapture-tcg). Games without arena models keep the CSS arena.
   - The client in `web/` is the template `create` copies, built here with the starter game.
   - Tests and CI use a neutral generated sample collection (`test/fixtures/sample-duel.game.json`).
 - `create` sets the page title to the game's title.
 - `relay` defaults to the project's only `games/*.game.json` when `TCG_GAME` is unset.
+
+## 0.8.0 (2026-10-24): the real arena
+
+No rules change: every ruleset replays exactly as before.
+
+**Rapture Chess's level, live.** The Valhalla and Underworld arenas are now the Blender-built models from Rapture Chess, rendered with three.js behind every screen:
+- the realm's sky dome with aurora and stars, fog, and its key, rim and hemisphere lighting;
+- the arena with its flowing lava shader and flickering fire;
+- bloom on what is hot, and AgX tone mapping.
+
+The camera circles the arena on the title screen and looks down over the dais in battle. The port is `src/arena3d` (stage and realm), bundled to `web/arena3d.js`.
+
+**Loading**
+- The 3D arena loads after the title screen, when the page is idle. It needs a real GPU and is skipped for software renderers and data-saver mode.
+- The models were decoded from Draco and quantized (KHR_mesh_quantization), so three.js reads them with no decoder, WebAssembly or worker.
+- Shaders compile in the background (`compileAsync`).
+- If anything fails, or the frame rate can't hold even at reduced resolution, the client keeps the CSS arena. `#arena[data-fallback]` says why.
+- The only security-policy change: `connect-src` allows `blob:`, which three.js uses to decode the models' embedded textures.
+
+**Cost control**
+- Resolution steps from 1.5× down to 0.75× if the frame rate drops.
+- The arena draws at 30 fps behind the battle and nothing in a hidden tab.
+- `window.deckwright.arenaStats()` reports frame rate, frame time, draw calls and triangles.
+
+**Profiling:** `node scripts/profile-web.mjs <url> [--runs 5] [--gpu] [--detail]`. It drives headless Chrome over the DevTools protocol, with one cold load and N warm ones, and reports:
+- time to the title screen, page-ready and load times;
+- JS bytes;
+- main-thread long tasks after the title, attributed to `arena:*` marks;
+- which arena ran, and its frame stats.
+
+**Battle layout:** the fanned hand hangs below your plate instead of covering it.
 
 ## 0.7.0 (2026-10-24): the game client
 

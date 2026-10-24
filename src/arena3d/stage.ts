@@ -1,0 +1,241 @@
+/**
+ * The 3D stage behind the game client, ported from Rapture Chess (src/scene/stage.ts): the renderer, the sky dome with
+ * its aurora and stars, fog, the key, rim, hemisphere and accent lights, a studio environment for reflections, bloom
+ * on what is really hot, and AgX tone mapping. Lighter than the chess stage on purpose: no ambient occlusion, mirror
+ * floor or shadow pass, because the cards are the bright thing on screen here, not the set.
+ *
+ * Cost control:
+ *   - a frame governor steps the resolution down (1.5x, 1x, 0.75x of CSS pixels) when the average drops under 45 fps
+ *     and reports failure if even the lowest step can't hold 28 fps, so the client falls back to the CSS arena;
+ *   - behind the battle (mood "battle") it draws every other frame: the level is dimmed there and barely moves;
+ *   - a hidden tab draws nothing (requestAnimationFrame stops).
+ */
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+export type Mood = 'menu' | 'battle';
+export interface SkyColors { top: number; bottom: number; glow: number; fog: number; fogDensity: number }
+export interface StageStats { fps: number; pixelRatio: number; drawCalls: number; triangles: number; frameMs: number }
+
+const RATIOS = [1.5, 1, 0.75];
+
+export class Stage {
+  readonly renderer: THREE.WebGLRenderer;
+  readonly scene = new THREE.Scene();
+  readonly camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
+  readonly keyLight = new THREE.DirectionalLight(0xfff1dc, 2.2);
+  readonly rimLight = new THREE.SpotLight(0x8fb4ff, 40, 40, Math.PI / 5, 0.6, 1.4);
+  readonly hemi = new THREE.HemisphereLight(0x2a2f45, 0x080608, 0.5);
+  readonly floorPlate: THREE.Mesh<THREE.CircleGeometry, THREE.MeshStandardMaterial>;
+  private readonly composer: EffectComposer;
+  private readonly bloom: UnrealBloomPass;
+  private readonly sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  private readonly stars: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
+  private readonly timer = new THREE.Timer();
+  private readonly updaters: Array<(dt: number, t: number) => void> = [];
+  private readonly target = new THREE.Vector3(0, 0.35, 0);
+  private readonly battleSpot = new THREE.Vector3();
+  private ratioStep: number;
+  private mood: Mood = 'menu';
+  private angle = 0.6;
+  private shakeLeft = 0;
+  private frame = 0;
+  private frames = 0;
+  private sample = 0;
+  private lowStreak = 0;
+  private workMs = 0;
+  private stats: StageStats = { fps: 60, pixelRatio: 1, drawCalls: 0, triangles: 0, frameMs: 0 };
+  /** Called when even the lowest resolution can't hold the frame rate: the client drops back to the CSS arena. */
+  onTooSlow: (() => void) | null = null;
+
+  constructor(readonly canvas: HTMLCanvasElement, private readonly still: boolean) {
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false });
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.AgXToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    // count draw calls over the whole frame (every pass), not just the last one
+    this.renderer.info.autoReset = false;
+    // phones start one step down: a weak GPU shouldn't have to prove itself slow first
+    this.ratioStep = matchMedia('(pointer: coarse)').matches ? 1 : 0;
+
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environmentIntensity = 0.55;
+    pmrem.dispose();
+    this.scene.fog = new THREE.FogExp2(0x05050a, 0.028);
+    this.scene.background = new THREE.Color(0x05050a);
+
+    this.keyLight.position.set(5, 11, 6);
+    this.rimLight.position.set(-6, 8, -9);
+    const a0 = new THREE.PointLight(0x38a8ff, 18, 14, 1.8), a1 = new THREE.PointLight(0xff6a2a, 18, 14, 1.8);
+    a0.position.set(-5.5, 1.6, 5.5); a1.position.set(5.5, 1.6, -5.5);
+    this.scene.add(this.keyLight, this.keyLight.target, this.rimLight, this.rimLight.target, this.hemi, a0, a1);
+
+    // the dais the cards are fought over: a dark polished plate the realm sizes
+    this.floorPlate = new THREE.Mesh(new THREE.CircleGeometry(9.05, 64), new THREE.MeshStandardMaterial({ color: 0x0b0b10, roughness: 0.62, metalness: 0.35, envMapIntensity: 0.18 }));
+    this.floorPlate.rotation.x = -Math.PI / 2;
+    this.floorPlate.position.y = -0.165;
+    this.scene.add(this.floorPlate);
+
+    this.sky = this.skyDome();
+    this.stars = this.starfield();
+    this.scene.add(this.sky, this.stars);
+
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    // bloom only on what is really hot (fire, runes, lava): the threshold keeps stone and gold crisp
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.45, 0.4, 1.0);
+    this.composer.addPass(this.bloom);
+    this.composer.addPass(new OutputPass());
+
+    this.camera.position.set(0, 8.2, 12.6);
+    window.addEventListener('resize', this.resize);
+    this.resize();
+  }
+
+  // ------------------------------------------------------------------ sky
+  private skyDome(): THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial> {
+    return new THREE.Mesh(new THREE.SphereGeometry(80, 48, 24), new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { top: { value: new THREE.Color(0x05050b) }, bottom: { value: new THREE.Color(0x120d16) }, glow: { value: new THREE.Color(0x3a2a40) }, aurora: { value: 0 }, time: { value: 0 } },
+      vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform vec3 top, bottom, glow; uniform float aurora, time; varying vec3 vP;
+        void main(){ vec3 d = normalize(vP); float h = d.y; vec3 c = mix(bottom, top, smoothstep(-0.2, 0.6, h));
+        c += glow * pow(max(0.0, 1.0 - abs(h + 0.05) * 4.0), 2.0) * 0.6;
+        float a = atan(d.z, d.x);
+        float band = sin(a * 3.0 + time * 0.15 + sin(a * 7.0 - time * 0.1) * 0.8) * 0.5 + 0.5;
+        float veil = smoothstep(0.25, 0.55, h) * (1.0 - smoothstep(0.75, 0.95, h)) * band;
+        c += aurora * veil * mix(vec3(0.1, 0.9, 0.5), vec3(0.5, 0.2, 0.9), sin(a * 2.0 + time * 0.2) * 0.5 + 0.5) * 0.35;
+        gl_FragColor = vec4(c, 1.0); }`,
+    }));
+  }
+
+  private starfield(): THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial> {
+    const n = 900, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    let s = 7;
+    const rnd = (): number => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    for (let i = 0; i < n; i++) {
+      const th = rnd() * Math.PI * 2, ph = Math.acos(rnd() * 0.9 + 0.05), r = 70;
+      pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)], i * 3);
+      const w = 0.4 + rnd() * 0.6;
+      col.set([w, w * (0.85 + rnd() * 0.15), w * (0.8 + rnd() * 0.3)], i * 3);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, opacity: 0.8, fog: false }));
+  }
+
+  setSky(c: SkyColors, aurora: number, stars: number): void {
+    const u = this.sky.material.uniforms;
+    (u.top.value as THREE.Color).set(c.top); (u.bottom.value as THREE.Color).set(c.bottom); (u.glow.value as THREE.Color).set(c.glow);
+    u.aurora.value = aurora;
+    const fog = this.scene.fog as THREE.FogExp2;
+    fog.color.set(c.fog); fog.density = c.fogDensity;
+    (this.scene.background as THREE.Color).set(c.fog);
+    this.stars.material.opacity = stars;
+    this.stars.visible = stars > 0;
+  }
+
+  setFloorRadius(r: number): void {
+    this.floorPlate.visible = r > 0;
+    if (r > 0) { this.floorPlate.geometry.dispose(); this.floorPlate.geometry = new THREE.CircleGeometry(r, 64); }
+  }
+
+  // ------------------------------------------------------------------ camera and frames
+  setMood(m: Mood): void { this.mood = m; this.resize(); }
+  quake(): void { this.shakeLeft = 0.3; }
+  onUpdate(fn: (dt: number, t: number) => void): void { this.updaters.push(fn); }
+  getStats(): StageStats { return { ...this.stats }; }
+
+  private readonly resize = (): void => {
+    const w = this.canvas.clientWidth || window.innerWidth, h = this.canvas.clientHeight || window.innerHeight;
+    const ratio = Math.min(window.devicePixelRatio || 1, RATIOS[this.ratioStep]);
+    this.renderer.setPixelRatio(ratio);
+    this.renderer.setSize(w, h, false);
+    this.composer.setPixelRatio(ratio);
+    this.composer.setSize(w, h);
+    this.bloom.resolution.set(w / 2, h / 2);
+    this.camera.aspect = w / h;
+    // portrait phones: open the field of view so the arena still fills the frame
+    this.camera.fov = this.camera.aspect < 1 ? Math.min(72, 42 / this.camera.aspect) : 42;
+    // the title screen on a wide screen: slide the picture right, clear of the menu column (as Rapture Chess does)
+    const shift = this.mood === 'menu' && this.camera.aspect > 1.25 ? Math.round(w * 0.12) : 0;
+    if (shift) this.camera.setViewOffset(w, h, -shift, 0, w, h); else this.camera.clearViewOffset();
+    this.camera.updateProjectionMatrix();
+    this.stats.pixelRatio = ratio;
+  };
+
+  /** Menu: a slow high circle round the dais (Rapture Chess's attract camera). Battle: high over the dais, barely drifting. */
+  private place(dt: number, t: number): void {
+    if (this.mood === 'menu') {
+      if (!this.still) this.angle += dt * 0.06;
+      const r = 12.6, y = (this.camera.aspect > 1.25 ? 8.2 : 6.6) + Math.sin(this.angle * 0.7) * 0.7;
+      this.camera.position.set(Math.sin(this.angle) * r, y, Math.cos(this.angle) * r);
+    } else {
+      this.battleSpot.set(this.still ? 0 : Math.sin(t * 0.12) * 0.6, 13.5, 10.5);
+      this.camera.position.lerp(this.battleSpot, Math.min(1, dt * 2));
+    }
+    this.camera.lookAt(this.target);
+    if (this.shakeLeft > 0) {
+      this.shakeLeft -= dt;
+      const k = 0.08 * Math.max(0, this.shakeLeft) * 4;
+      this.camera.position.x += (Math.random() - 0.5) * k;
+      this.camera.position.y += (Math.random() - 0.5) * k;
+    }
+  }
+
+  /** Step the resolution down when the frame rate can't hold; report when nothing is left to give. */
+  private govern(dt: number): void {
+    this.frames++;
+    this.sample += dt;
+    if (this.sample < 2) return;
+    this.stats.fps = Math.round(this.frames / this.sample);
+    this.stats.frameMs = Math.round((this.workMs / this.frames) * 100) / 100;
+    this.frames = 0; this.sample = 0; this.workMs = 0;
+    if (document.hidden) return;
+    const target = this.mood === 'battle' ? 28 : 45;   // battle draws every other frame by design
+    if (this.stats.fps >= target) { this.lowStreak = 0; return; }
+    if (++this.lowStreak < 2) return;
+    this.lowStreak = 0;
+    if (this.ratioStep < RATIOS.length - 1) { this.ratioStep++; this.resize(); }
+    else if (this.stats.fps < 24) this.onTooSlow?.();
+  }
+
+  start(): void {
+    this.renderer.setAnimationLoop(() => {
+      this.timer.update();
+      const dt = Math.min(0.05, this.timer.getDelta()), t = this.timer.getElapsed();
+      this.govern(dt);
+      // behind the battle the level is dimmed and nearly still: half the frames are plenty
+      if (this.mood === 'battle' && (this.frame++ & 1)) return;
+      const t0 = performance.now();
+      this.renderer.info.reset();
+      this.sky.material.uniforms.time.value = t;
+      for (const fn of this.updaters) fn(dt, t);
+      this.place(dt, t);
+      this.composer.render(dt);
+      this.workMs += performance.now() - t0;
+      const info = this.renderer.info.render;
+      this.stats.drawCalls = info.calls;
+      this.stats.triangles = info.triangles;
+    });
+  }
+
+  dispose(): void {
+    this.renderer.setAnimationLoop(null);
+    window.removeEventListener('resize', this.resize);
+    this.composer.dispose();
+    this.scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      m.geometry?.dispose();
+      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
+      for (const mat of mats) { for (const v of Object.values(mat)) if (v instanceof THREE.Texture) v.dispose(); mat.dispose(); }
+    });
+    this.renderer.dispose();
+  }
+}

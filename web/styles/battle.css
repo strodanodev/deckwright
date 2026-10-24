@@ -80,7 +80,7 @@
 
 /* ------------------------------------------------------------------ the hand */
 /* The hand peeks from the bottom edge; a card lifts fully into view when you point at it. */
-.hand { --w: clamp(92px, 17vh, 132px); display: flex; justify-content: center; align-items: flex-end; height: calc(var(--w) * 1.4 * 0.68); max-width: 100%; padding: 0 16px; margin-bottom: calc(var(--safe-b) * -1 - 10px); perspective: 1000px; }
+.hand { --w: clamp(92px, 17vh, 132px); display: flex; justify-content: center; align-items: flex-start; height: calc(var(--w) * 1.4 * 0.64); max-width: 100%; padding: 0 16px; margin-bottom: calc(var(--safe-b) * -1 - 10px); perspective: 1000px; }
 .hand .tcard { margin-left: calc(var(--w) * -0.22); transform-origin: 50% 120%; transform: rotate(calc(var(--i, 0) * 3.2deg)) translateY(calc(var(--i, 0) * var(--i, 0) * 2.4px)); animation: dealIn 0.45s var(--ease-out) both; }
 .hand .tcard:first-child { margin-left: 0; }
 @keyframes dealIn { from { opacity: 0; transform: translateY(60px) rotate(0); } }
@@ -102,7 +102,7 @@
 .end-turn.ready .et-ring { animation: spin 8s linear infinite; }
 @keyframes endReady { 50% { box-shadow: 0 0 0 3px #0b0910, 0 0 0 5px var(--gold-1), 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 50px rgba(255, 201, 94, 0.85); } }
 .match.viewing .dock { display: none; }
-.match.viewing .hand { height: auto; margin-bottom: 0; }
+.match.viewing .hand { height: auto; align-items: flex-end; margin-bottom: 0; }
 
 /* ------------------------------------------------------------------ fallen feed */
 .killfeed { position: absolute !important; left: calc(var(--safe-l) + 18px); top: 42%; display: grid; gap: 6px; width: 260px; pointer-events: none; }
@@ -203,7 +203,7 @@
   .u-atk, .u-hp { width: 22px; height: 22px; font-size: 11px; }
   .u-kw { display: none; }
   /* no hover on a phone: the whole hand shows, and scrolls sideways */
-  .hand { --w: 84px; height: auto; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px 4px; margin-bottom: 0; scrollbar-width: none; perspective: none; }
+  .hand { --w: 84px; height: auto; align-items: flex-end; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px 4px; margin-bottom: 0; scrollbar-width: none; perspective: none; }
   .hand .tcard { --w: 84px; margin-left: -12px; transform: none; }
   .hand .tcard:hover, .hand .tcard:focus-visible { transform: translateY(-8px); }
   .hand .tcard.picked { transform: translateY(-16px); }

@@ -5,7 +5,7 @@ The Tessaract source code, templates, tools and documentation in this repository
 the Apache License, Version 2.0 (see LICENSE).
 
 Earlier versions of this repository (as Deckwright) included Rapture demo content: character paintings,
-the Rapture ARC 1 collection snapshot and a game file with Rapture names. That content was never covered
+the Rapture Chess arena models, the Rapture ARC 1 collection snapshot and a game file with Rapture names. That content was never covered
 by the license: Rapture characters, names and artwork are (c) LitVM Games, all rights reserved. It now
 lives in Rapture TCG (https://github.com/strodanodev/rapture-tcg), which fetches the art at build time.
 
