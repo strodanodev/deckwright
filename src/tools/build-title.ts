@@ -1,7 +1,7 @@
 /**
  * Bundle a game config into the one-file LitNode ruleset every node pins by hash.
  *
- *   deckwright title <game.json> [--out rulesets] [--litnode <litnode dir>]
+ *   tessaract title <game.json> [--out rulesets] [--litnode <litnode dir>]
  *
  * Writes `<out>/<rulesetId>.js` (the artifact) and `<out>/<rulesetId>.json` (the sidecar a node reads)
  * and prints the buildHash. Given a LitNode folder (or LITNODE_HOME) it runs that folder's
@@ -16,7 +16,7 @@ import { die, flag, litnodeHash, parseArgs, readGame } from './common';
 import { bundleRuleset, compatCheck } from './ruleset';
 
 const args = parseArgs();
-const gamePath = args._[0] ?? die('usage: deckwright title <game.json> [--out rulesets] [--litnode <dir>]');
+const gamePath = args._[0] ?? die('usage: tessaract title <game.json> [--out rulesets] [--litnode <dir>]');
 const game = readGame(gamePath);
 const outDir = resolve(flag(args, 'out') ?? 'rulesets');
 const rid = game.litnode.rulesetId;

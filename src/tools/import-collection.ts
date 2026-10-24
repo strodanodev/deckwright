@@ -1,9 +1,9 @@
 /**
- * Turn an NFT collection snapshot (`deckwright snapshot`) into a playable card set: every design becomes a
+ * Turn an NFT collection snapshot (`tessaract snapshot`) into a playable card set: every design becomes a
  * unit whose cost, attack and health come from its ERC-6699 CoreStats, and the template's neutral spells
  * and relics are added so the deck has answers.
  *
- *   deckwright import <cards.json> --id my-game [--out games] [--title "My Duel"] [--max-cards 300] [--deck-units 40] [--plain]
+ *   tessaract import <cards.json> --id my-game [--out games] [--title "My Duel"] [--max-cards 300] [--deck-units 40] [--plain]
  *
  * The design kit (tools/design-kit.ts) then gives each element an archetype (aggro, control, defense, value):
  * units get its keywords and abilities by tier, each element gets its spells and relic, and champions get the
@@ -48,7 +48,7 @@ const KIND: Record<string, { cost: number; rarity: string }> = {
 const RAPTURE_BEATS: Record<string, string[]> = { water: ['lava'], lava: ['metal'], metal: ['earth'], earth: ['water'] };
 
 const args = parseArgs();
-const snapPath = args._[0] ?? die('usage: deckwright import <cards.json> --id my-game [--out games]');
+const snapPath = args._[0] ?? die('usage: tessaract import <cards.json> --id my-game [--out games]');
 const id = flag(args, 'id') ?? die('--id <game-id> is required');
 const snap = JSON.parse(readFileSync(resolve(snapPath), 'utf8')) as Snapshot;
 const template = JSON.parse(readFileSync(pkgPath('templates', 'starter.game.json'), 'utf8')) as GameConfig;

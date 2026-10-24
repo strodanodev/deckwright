@@ -1,12 +1,12 @@
 # Card design guide
 
-Numbers that produce a playable, balanced Deckwright set on the first pass. They're calibrated against the
+Numbers that produce a playable, balanced Tessaract set on the first pass. They're calibrated against the
 default rules:
 - energy starts at 1, grows by 1 per turn and caps at 10;
 - the second player gets +1 energy on their first turn, and +1 card in their opening hand (`secondPlayerCards`);
 - the board holds 5 units and the hand holds 8.
 
-Run `deckwright sim` and adjust from there.
+Run `tessaract sim` and adjust from there.
 
 ## Set shape (18–24 distinct cards)
 
@@ -52,9 +52,9 @@ Keyword and ability prices, paid from the budget:
 | `turnStart`: +0/+1 to itself | 1 | Grows into a wall |
 | `attack`: deal 1 to the enemy champion | 1 | Rewards attacking |
 
-`deckwright import` applies a kit like this automatically (src/tools/design-kit.ts); its tiers are a good reference.
+`tessaract import` applies a kit like this automatically (src/tools/design-kit.ts); its tiers are a good reference.
 
-**Hero powers** cost 1–3. Aim for each power to win 45–55% against the others (`sim` prints the rates). Rapture Duel's four:
+**Hero powers** cost 1–3. Aim for each power to win 45–55% against the others (`sim` prints the rates). Rapture TCG's four:
 - Lava Strike (2): 2 to the enemy champion.
 - Water Bolt (3): deal 1, chosen.
 - Earth Ward (2): shield a friendly unit.

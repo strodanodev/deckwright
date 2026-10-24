@@ -1,5 +1,5 @@
 /**
- * Deckwright data model.
+ * Tessaract data model.
  *
  * Everything under `core/` is pure TypeScript with no engine, DOM or Node imports.
  * The same files are bundled into the LitNode ruleset (replayed by host and witnesses)

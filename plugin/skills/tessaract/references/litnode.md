@@ -15,7 +15,7 @@ Verified against LitNode **v0.11.26** (protocol 3), which ships inside the LITNO
 
 ## What LitNode does and what the SDK does
 
-| Step | LitNode | Deckwright |
+| Step | LitNode | Tessaract |
 |---|---|---|
 | Queue and pair | The cabinet signs `queue` and POSTs `/queue`. Players pair in 2 s buckets, two at a time, by ruleset and mode | — |
 | Seed | `h('seed', beacon, matchId)` from the litVM blockhash beacon | `rules.init(seed, …)` shuffles with `seededRandom` |
@@ -66,7 +66,7 @@ A result is *official* only with both players' signatures plus at least one co-s
 
 - The node's gateway proxies every WebSocket for `wss://<wsAddr>/LIT-<room>` to the gauntlet, with no ticket check. Seats are checked by the relay's `hello`, so a `{ t: 'watch' }` connection spectates a placed match with no LitNode change.
 - Ranked spectators are delayed by 2 minutes by default (`TCG_WATCH_DELAY_MS`), and the relay waits for that delay before it exits.
-- A replay link's record has the same fields as the `/ledger` submission's replay inputs (seed, participants, hydrated agents, entries). `deckwright replay` reaches the same end as the node's sandbox replay. Its digest is a Deckwright fingerprint, not LitNode's `h('state', …)` root.
+- A replay link's record has the same fields as the `/ledger` submission's replay inputs (seed, participants, hydrated agents, entries). `tessaract replay` reaches the same end as the node's sandbox replay. Its digest is a Tessaract fingerprint, not LitNode's `h('state', …)` root.
 
 ## Gaps and risks (v1)
 

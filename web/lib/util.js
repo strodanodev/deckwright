@@ -1,4 +1,4 @@
-// Deckwright (carried over from the FORGE hall) — small helpers the DOM modules share. No three.js here, so Node tests can import it too.
+// Tessaract (carried over from the FORGE hall) — small helpers the DOM modules share. No three.js here, so Node tests can import it too.
 
 /** HTML-escape a value for an innerHTML template. */
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

@@ -26,10 +26,10 @@
  *
  * Dev mode (TCG_DEV=1, no LitNode): no tickets, players name themselves in `hello` and may name a `wallet`
  * (unproven), no ledger post. Champion stats still come from the chain unless TCG_CHAIN=off.
- *   TCG_DEV=1 TCG_GAME=games/my-duel.game.json deckwright relay
+ *   TCG_DEV=1 TCG_GAME=games/my-duel.game.json tessaract relay
  */
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 
@@ -42,7 +42,13 @@ import { chainCheckFromEnv } from './chain-check';
 
 const env = process.env;
 const DEV = env.TCG_DEV === '1';
-const game = JSON.parse(readFileSync(env.TCG_GAME ?? 'games/rapture-duel.game.json', 'utf8')) as GameConfig;
+// The game: TCG_GAME, or the project's only games/*.game.json.
+const gameFile = env.TCG_GAME ?? (() => {
+  const found = existsSync('games') ? readdirSync('games').filter((f) => f.endsWith('.game.json')) : [];
+  if (found.length !== 1) throw new Error('set TCG_GAME to the game file (games/ has none or several)');
+  return `games/${found[0]}`;
+})();
+const game = JSON.parse(readFileSync(gameFile, 'utf8')) as GameConfig;
 const rules = createRules(compileGame(game));
 const PORT = Number(env.GAUNTLET_PORT ?? env.PORT ?? 7830);
 const SECRET = env.GAUNTLET_SECRET ?? '';

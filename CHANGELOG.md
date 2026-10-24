@@ -2,6 +2,20 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.8.0 (2026-10-24): Deckwright is now Tessaract
+
+No rules change: every ruleset replays exactly as before.
+
+- **Renamed:** the package, the CLI (`tessaract`), the Claude Code plugin and skill (`/plugin install tessaract@tessaract`), the engine bundle (`web/engine/tessaract.js`) and the repo (github.com/strodanodev/tessaract).
+  - `deckwright` still works as a CLI alias, and GitHub redirects the old repo URL.
+  - Browser storage keys keep their `deckwright.` prefix, so players keep their decks, profiles and settings.
+- **Products moved out:** Tessaract is the SDK only.
+  - The Rapture game, its art and its collection snapshot moved to Rapture TCG (github.com/strodanodev/rapture-tcg).
+  - The client in `web/` is the template `create` copies, built here with the starter game.
+  - Tests and CI use a neutral generated sample collection (`test/fixtures/sample-duel.game.json`).
+- `create` sets the page title to the game's title.
+- `relay` defaults to the project's only `games/*.game.json` when `TCG_GAME` is unset.
+
 ## 0.7.0 (2026-10-24): the game client
 
 No rules change: every ruleset replays exactly as before. The web client is rebuilt as a game, in Rapture Chess's design.

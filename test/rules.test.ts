@@ -8,7 +8,7 @@ import type { GameConfig, MatchState } from '../src/core/index';
 
 const load = (p: string): GameConfig => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8')) as GameConfig;
 const STARTER = load('../templates/starter.game.json');
-const GAMES = readdirSync(new URL('../games/', import.meta.url)).filter((f) => f.endsWith('.game.json')).map((f) => [f, load(`../games/${f}`)] as const);
+const GAMES = readdirSync(new URL('./fixtures/', import.meta.url)).filter((f) => f.endsWith('.game.json')).map((f) => [f, load(`./fixtures/${f}`)] as const);
 
 test('the starter template and every game validate', () => {
   assert.deepEqual(validateGame(STARTER), []);

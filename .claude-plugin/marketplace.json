@@ -1,16 +1,16 @@
 {
-  "name": "deckwright",
+  "name": "tessaract",
   "owner": {
     "name": "strodanodev",
     "url": "https://github.com/strodanodev"
   },
-  "description": "Deckwright: the Web3 TCG game maker, as a Claude Code plugin.",
+  "description": "Tessaract: the Web3 TCG game maker, as a Claude Code plugin.",
   "plugins": [
     {
-      "name": "deckwright",
+      "name": "tessaract",
       "source": "./plugin",
-      "description": "Build, balance, ship and host an NFT trading card game with Deckwright.",
-      "version": "0.7.0",
+      "description": "Build, balance, ship and host an NFT trading card game with Tessaract.",
+      "version": "0.8.0",
       "category": "development",
       "tags": [
         "tcg",

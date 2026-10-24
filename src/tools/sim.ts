@@ -2,7 +2,7 @@
  * Headless balance and determinism check: greedy bots play N matches with random seeds, then every log is
  * replayed from scratch and must reach the same root.
  *
- *   deckwright sim <game.json> [--matches 200] [--decks suggested|random|mixed] [--stats random|base] [--strict]
+ *   tessaract sim <game.json> [--matches 200] [--decks suggested|random|mixed] [--stats random|base] [--strict]
  *
  * --decks (declared-deck games): `suggested` (default) declares the suggested deck on both sides; `random`
  *   declares a random legal deck per side, so every card gets played and wallet decks get balance numbers;
@@ -22,7 +22,7 @@ import { createRules } from '../core/rules';
 import type { AgentStats, MatchState } from '../core/types';
 import { die, flag, litnodeHash, parseArgs, readGame } from './common';
 
-const usage = 'usage: deckwright sim <game.json> [--matches 200] [--decks suggested|random|mixed] [--stats random|base] [--strict]';
+const usage = 'usage: tessaract sim <game.json> [--matches 200] [--decks suggested|random|mixed] [--stats random|base] [--strict]';
 const args = parseArgs();
 const game = readGame(args._[0] ?? die(usage));
 const matches = Number(flag(args, 'matches') ?? 200);

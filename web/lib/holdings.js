@@ -1,4 +1,4 @@
-// Deckwright (carried over from the FORGE hall) — what a wallet holds of a Rapture collection, and which card each token is. No DOM: library.js draws it.
+// Tessaract (carried over from the FORGE hall) — what a wallet holds of a Rapture collection, and which card each token is. No DOM: library.js draws it.
 //
 // The collection is an ERC-721 that is NOT enumerable, and a pack mints NEW tokens (editions) from a template, so a
 // player's cards are token ids the snapshot has never seen. Three sources are combined, and the chain has the last word:

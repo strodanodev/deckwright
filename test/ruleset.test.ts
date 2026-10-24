@@ -5,8 +5,8 @@ import test from 'node:test';
 
 import { bundleRuleset, compatCheck } from '../src/tools/ruleset';
 
-const games = readdirSync(new URL('../games/', import.meta.url)).filter((f) => f.endsWith('.game.json'));
-const paths = [fileURLToPath(new URL('../templates/starter.game.json', import.meta.url)), ...games.map((f) => fileURLToPath(new URL(`../games/${f}`, import.meta.url)))];
+const games = readdirSync(new URL('./fixtures/', import.meta.url)).filter((f) => f.endsWith('.game.json'));
+const paths = [fileURLToPath(new URL('../templates/starter.game.json', import.meta.url)), ...games.map((f) => fileURLToPath(new URL(`./fixtures/${f}`, import.meta.url)))];
 
 test('every game bundles into a LitNode-compatible ruleset', async () => {
   for (const p of paths) {

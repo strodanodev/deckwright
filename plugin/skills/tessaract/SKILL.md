@@ -1,9 +1,9 @@
 ---
-name: deckwright
-description: Build a complete Web3 trading card game with Deckwright — from scratch (a themed card set) or from any NFT collection on chain — and ship it as a playable, deployable web game. One JSON file is the game; ERC-6699 token stats become champions; players can bring wallet decks; bots balance it; the same deterministic rules run in the browser, a two-player relay and LitNode. Use when the user asks to make, design, rebalance, theme, test or deploy a card game / TCG / CCG, turn NFTs into playable cards, or work in a Deckwright project.
+name: tessaract
+description: Build a complete Web3 trading card game with Tessaract — from scratch (a themed card set) or from any NFT collection on chain — and ship it as a playable, deployable web game. One JSON file is the game; ERC-6699 token stats become champions; players can bring wallet decks; bots balance it; the same deterministic rules run in the browser, a two-player relay and LitNode. Use when the user asks to make, design, rebalance, theme, test or deploy a card game / TCG / CCG, turn NFTs into playable cards, or work in a Tessaract project.
 ---
 
-# Deckwright: build a card game
+# Tessaract: build a card game
 
 Work through this in order and don't stop at a plan: the deliverable is a game that runs. A fresh request ("make me a pirate TCG") should end with a project that has:
 - a themed, balanced card set;
@@ -14,7 +14,7 @@ Ask the user only if something is genuinely blocking. Otherwise choose sensible 
 
 ## 0. Before you start
 
-- **Tools:** you need Node 22+, plus git (npx installs Deckwright from GitHub). Check with `node --version`.
+- **Tools:** you need Node 22+, plus git (npx installs Tessaract from GitHub). Check with `node --version`.
 - **Inputs to settle**, from the request or by default:
 
 | Input | Default |
@@ -28,18 +28,18 @@ Ask the user only if something is genuinely blocking. Otherwise choose sensible 
 ## 1. Create the project
 
 ```bash
-npx github:strodanodev/deckwright create <game-id> --title "<Game Title>"
+npx github:strodanodev/tessaract create <game-id> --title "<Game Title>"
 cd <game-id>
 npm install
 ```
 
-- Once Deckwright is on npm, `npx deckwright create …` does the same.
+- Once Tessaract is on npm, `npx tessaract create …` does the same.
 - `create` writes these files:
   - `games/<id>.game.json`: the game; you'll rewrite it.
   - `web/`: the site, with a built engine.
   - `vercel.json` and `gauntlet.json`.
   - this skill, in `.claude/skills/`.
-- Inside the project, run every command as `npx deckwright <cmd>`. It's a local dependency.
+- Inside the project, run every command as `npx tessaract <cmd>`. It's a local dependency.
 
 ## 2. Design the game (`games/<id>.game.json`)
 
@@ -60,7 +60,7 @@ Hard rules: the validator rejects anything else, with a clear message.
 ## 3. Balance it
 
 ```bash
-npx deckwright sim games/<id>.game.json --matches 300
+npx tessaract sim games/<id>.game.json --matches 300
 ```
 
 Iterate until the sim meets these targets. Each pass is a JSON edit plus a re-run.
@@ -91,8 +91,8 @@ The sim then prints **fun targets**. They are signals that the set plays as more
 Any ERC-721 works. ERC-6699 `coreStats` make champions; without them, champions are neutral.
 
 ```bash
-npx deckwright snapshot <address> --chain liteforge --out collection
-npx deckwright import collection/cards.json --id <game-id> --out games
+npx tessaract snapshot <address> --chain liteforge --out collection
+npx tessaract import collection/cards.json --id <game-id> --out games
 ```
 
 `import` applies the design kit: each element gets an archetype (aggro, control, defense, value), units get its keywords and abilities by tier, and each element gets spells, a relic and a hero power. `--plain` gives bare stat lines instead.
@@ -100,13 +100,13 @@ npx deckwright import collection/cards.json --id <game-id> --out games
 - **`snapshot`:** for chains other than Liteforge, use `--rpc <url>` and, if the chain has a Blockscout explorer, `--explorer <url>`. It downloads the art.
 - **`import`:** rewrites `games/<id>.game.json` from the collection. Then apply step 2's theming to the support cards and step 3's balancing.
 - **Wallet decks** (players bring the cards they own): add `"deckRules": { "mode": "declared", "size": 30, "maxCopies": 2 }`. The default `deck` must hold at least `size` cards.
-- **Balance wallet decks too:** run `npx deckwright sim games/<id>.game.json --matches 1000 --decks random` as well as the default. Both must meet step 3's targets. Random decks play every card, and the sim lists the strongest and weakest cards. Smaller decks favour the first player.
+- **Balance wallet decks too:** run `npx tessaract sim games/<id>.game.json --matches 1000 --decks random` as well as the default. Both must meet step 3's targets. Random decks play every card, and the sim lists the strongest and weakest cards. Smaller decks favour the first player.
 - **Rights:** the Rapture characters (`0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721`) are © LitVM Games. A game meant for release needs permission (see [references/pipeline.md](references/pipeline.md)). Prototypes are fine.
 
 ## 5. Check LitNode compatibility
 
 ```bash
-npx deckwright title games/<id>.game.json
+npx tessaract title games/<id>.game.json
 ```
 
 It must end `ok`. That means the game can later be hosted and settled on LitNode unchanged.
@@ -114,8 +114,8 @@ It must end `ok`. That means the game can later be hosted and settled on LitNode
 ## 6. Build and play the site
 
 ```bash
-npx deckwright web games/<id>.game.json            # add --collection collection/cards.json if you did step 4
-npx deckwright dev                                 # serves http://127.0.0.1:4173 (use 127.0.0.1, not localhost)
+npx tessaract web games/<id>.game.json            # add --collection collection/cards.json if you did step 4
+npx tessaract dev                                 # serves http://127.0.0.1:4173 (use 127.0.0.1, not localhost)
 ```
 
 - Run `dev` in the background.
@@ -132,7 +132,7 @@ npx deckwright dev                                 # serves http://127.0.0.1:417
 - Keep the page's safety rules:
   - no inline `<script>` (the CSP blocks it), so logic stays in `web/app.js` and `web/ui/`;
   - card and collection names go in through `textContent` only, never `innerHTML`. Use `h(tag, props, text)` from `web/ui/dom.js`; `icon()` is the one place trusted SVG is set as HTML.
-- Re-run `deckwright web` after every game JSON change; it regenerates `web/engine`, `web/data` and the art.
+- Re-run `tessaract web` after every game JSON change; it regenerates `web/engine`, `web/data` and the art.
 - The title menu has **Play** (practice against the bot, easy, normal or hard), **Gauntlet** (eight bot matches with rewards), **Daily puzzle** ("win this turn") and **Profile** (history, streaks, replays). They work for any game with no extra config.
   - Check that today's puzzle loads.
   - Check that a Gauntlet run starts.
@@ -142,14 +142,14 @@ npx deckwright dev                                 # serves http://127.0.0.1:417
 ## 7. Two players (optional check)
 
 ```bash
-TCG_DEV=1 TCG_GAME=games/<id>.game.json npx deckwright relay     # ws://127.0.0.1:7830, one match per process
+TCG_DEV=1 TCG_GAME=games/<id>.game.json npx tessaract relay     # ws://127.0.0.1:7830, one match per process
 ```
 
 Open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&name=alice` and `…&name=bob` in two tabs. Pick champions; with wallet decks, build or suggest a deck. Play a turn in each tab.
 - The relay reads champion stats from the chain, never from the page. With no network, add `TCG_CHAIN=off`: champions then fight with base stats.
 - **Owned-only test:** add `TCG_OWNED=1` to the relay and `&owned=1` to both URLs, and connect a wallet. The relay rejects collection cards that wallet doesn't hold.
 - **Spectate:** open `http://127.0.0.1:4173/?relay=ws://127.0.0.1:7830&watch=1` in a third tab (players also get a Copy watch link button). Spectators see every move and can't act; `TCG_WATCH_DELAY_MS` delays them.
-- **Replays:** at the end of any match, Share replay gives a link with the whole match in its `#replay=` fragment. `npx deckwright replay "<link>"` prints the result the link replays to, which is the way to check a disputed match.
+- **Replays:** at the end of any match, Share replay gives a link with the whole match in its `#replay=` fragment. `npx tessaract replay "<link>"` prints the result the link replays to, which is the way to check a disputed match.
 
 ## 8. Deliver
 
@@ -163,7 +163,7 @@ List what you assumed, and anything left undone.
 
 ## Rules that keep matches replayable
 
-Don't break these when extending Deckwright itself.
+Don't break these when extending Tessaract itself.
 - **The rules core is pure and integer-only.**
   - No `Math.random`, `Date`, timers, `fetch`, `WebSocket`, storage, `crypto.`, `process.env` or `import()`, not even as words in strings.
   - Randomness comes only from `seededRandom(seed)`.
@@ -178,14 +178,14 @@ Don't break these when extending Deckwright itself.
 | Symptom | Fix |
 |---|---|
 | `invalid game config: …` | Read the listed problems; each names the field. Limits are in game-config.md |
-| `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/deckwright` and then `npx deckwright` |
+| `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/tessaract` and then `npx tessaract` |
 | Site blank, console CSP error | Something was inlined or loaded from another origin. Move it into `web/ui/` or `web/styles/` |
 | `snapshot` slow or `429` | The public RPC throttles; the tool waits and retries. Explorer-backed chains are faster |
 | Art missing after `web` | Remote art is dropped by design: re-run `snapshot` (it downloads), or use local `art` paths |
 
-## Extending Deckwright (in its own repo)
+## Extending Tessaract (in its own repo)
 
-The source is at https://github.com/strodanodev/deckwright: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
+The source is at https://github.com/strodanodev/tessaract: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
 1. Add it to the `Effect` union in `src/core/types.ts`.
 2. Add one entry to `OPS` in `src/core/effects.ts`: field checks, allowed targets, default target, resolution (through `Fx`) and card text. Validation, legal actions, the bot, the sim and the client's card text pick it up from there.
 3. If it needs a new engine primitive, add it to `Fx` and implement it in `fxFor()` in `src/core/rules.ts`.

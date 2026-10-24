@@ -1,4 +1,6 @@
-# Deckwright
+# Tessaract
+
+> **Formerly Deckwright.** The package, CLI, skill and repo were renamed to Tessaract in 0.8.0. `npx github:strodanodev/deckwright` and the `deckwright` command still work as aliases for now.
 
 A lightweight Web3 trading card game maker.
 
@@ -6,25 +8,28 @@ A lightweight Web3 trading card game maker.
 - **NFTs bring the cards:** a collection's tokens become units, and any token's on-chain **ERC-6699** stats make a champion.
 - **Matches are deterministic integer logs:** the browser, the match relay and a **LitNode** ruleset all run the same rules code, so any match can be replayed and settled.
 
-The demo game is **Rapture Duel**, built from the 50 Rapture ARC 1 cards on LitVM Liteforge (chain 4441). Play it at https://deckwright-phi.vercel.app.
+Games built with Tessaract:
+- **[Rapture TCG](https://github.com/strodanodev/rapture-tcg):** the 50 Rapture ARC 1 cards on LitVM Liteforge (chain 4441) as a full card game.
+- **[Rapture Chess](https://github.com/strodanodev/rapture-chess):** 3D chess with Rapture avatars, using Tessaract's wallet, shell and RNG.
+- **[Tessaract Studio](https://github.com/strodanodev/tessaract-studio):** a visual builder for Tessaract games.
 
-Repo: https://github.com/strodanodev/deckwright
+Repo: https://github.com/strodanodev/tessaract
 
 ## Use it with Claude Code (one-shot game building)
 
-Install the plugin, then ask for a game, for example "make me a pirate trading card game". The `deckwright` skill creates the project, designs and balances the card set, builds the site and plays a turn to check it.
+Install the plugin, then ask for a game, for example "make me a pirate trading card game". The `tessaract` skill creates the project, designs and balances the card set, builds the site and plays a turn to check it.
 
 ```text
-/plugin marketplace add strodanodev/deckwright
-/plugin install deckwright@deckwright
+/plugin marketplace add strodanodev/tessaract
+/plugin install tessaract@tessaract
 ```
 
-From a shell: `claude plugin marketplace add strodanodev/deckwright`, then `claude plugin install deckwright@deckwright`. Run the skill directly with `/deckwright:deckwright`.
+From a shell: `claude plugin marketplace add strodanodev/tessaract`, then `claude plugin install tessaract@tessaract`. Run the skill directly with `/tessaract:tessaract`.
 
 ## Start a game (builders)
 
 ```bash
-npx github:strodanodev/deckwright create my-tcg   # scaffolds a project and builds its site
+npx github:strodanodev/tessaract create my-tcg   # scaffolds a project and builds its site
 cd my-tcg && npm install
 npm run dev                        # http://127.0.0.1:4173 — play it against the bot
 ```
@@ -32,26 +37,26 @@ npm run dev                        # http://127.0.0.1:4173 — play it against t
 Until the package is on npm, run it straight from GitHub:
 
 ```bash
-npx github:strodanodev/deckwright create my-tcg
+npx github:strodanodev/tessaract create my-tcg
 ```
 
-The new project then depends on `github:strodanodev/deckwright`. For a local copy, use `npx --package <path to deckwright-x.y.z.tgz> deckwright create my-tcg --sdk file:<path>`.
+The new project then depends on `github:strodanodev/tessaract`. For a local copy, use `npx --package <path to tessaract-x.y.z.tgz> tessaract create my-tcg --sdk file:<path>`.
 
 The new project contains:
 - **`games/<id>.game.json`:** the game.
 - **`web/`:** the site.
 - **`vercel.json`:** deploy config and CSP.
 - **`gauntlet.json`:** LitNode hosting, for later.
-- **`.claude/skills/deckwright`:** the skill, so an AI agent opened in the project knows the whole workflow (the same skill the plugin ships).
+- **`.claude/skills/tessaract`:** the skill, so an AI agent opened in the project knows the whole workflow (the same skill the plugin ships).
 
 ### Bring an NFT collection
 
 Any ERC-721 works. ERC-6699 CoreStats make each card's champion; without them, every champion fights with base stats (all 0).
 
 ```bash
-npx deckwright snapshot <collection address> --chain liteforge --out collection    # or --rpc <url> [--explorer <blockscout url>]
-npx deckwright import collection/cards.json --id my-tcg --out games
-npx deckwright web games/my-tcg.game.json --collection collection/cards.json
+npx tessaract snapshot <collection address> --chain liteforge --out collection    # or --rpc <url> [--explorer <blockscout url>]
+npx tessaract import collection/cards.json --id my-tcg --out games
+npx tessaract web games/my-tcg.game.json --collection collection/cards.json
 ```
 
 What `snapshot` does:
@@ -69,16 +74,16 @@ What `import` does:
 
 | Command | What it does |
 |---|---|
-| `deckwright create <dir>` | Scaffold a game project |
-| `deckwright new <id>` | Add a game config from the template |
-| `deckwright snapshot <address>` | Read an NFT collection (and its ERC-6699 stats) from chain |
-| `deckwright import <cards.json> --id <id>` | Turn a collection into a card set |
-| `deckwright sim <game.json> [--decks random]` | Bot vs bot: balance numbers and a replay determinism check. `--decks random` balances wallet decks and rates every card |
-| `deckwright title <game.json> [--litnode <dir>]` | Build the LitNode ruleset; run the built-in (or LitNode's real) conformance checks |
-| `deckwright web <game.json> [--collection <cards.json>]` | Build the static site's engine, data and art |
-| `deckwright dev` | Serve the site locally, with production headers |
-| `deckwright replay <link \| code \| record.json>` | Replay a shared match and print its result, scores and final-state digest |
-| `TCG_DEV=1 TCG_GAME=<game.json> deckwright relay` | Two-player relay. Open the site twice with `?relay=ws://127.0.0.1:7830&name=alice` and `&name=bob`. It reads champion stats from the chain (`TCG_CHAIN=off` to skip); `TCG_OWNED=1` enforces owned-only decks |
+| `tessaract create <dir>` | Scaffold a game project |
+| `tessaract new <id>` | Add a game config from the template |
+| `tessaract snapshot <address>` | Read an NFT collection (and its ERC-6699 stats) from chain |
+| `tessaract import <cards.json> --id <id>` | Turn a collection into a card set |
+| `tessaract sim <game.json> [--decks random]` | Bot vs bot: balance numbers and a replay determinism check. `--decks random` balances wallet decks and rates every card |
+| `tessaract title <game.json> [--litnode <dir>]` | Build the LitNode ruleset; run the built-in (or LitNode's real) conformance checks |
+| `tessaract web <game.json> [--collection <cards.json>]` | Build the static site's engine, data and art |
+| `tessaract dev` | Serve the site locally, with production headers |
+| `tessaract replay <link \| code \| record.json>` | Replay a shared match and print its result, scores and final-state digest |
+| `TCG_DEV=1 TCG_GAME=<game.json> tessaract relay` | Two-player relay. Open the site twice with `?relay=ws://127.0.0.1:7830&name=alice` and `&name=bob`. It reads champion stats from the chain (`TCG_CHAIN=off` to skip); `TCG_OWNED=1` enforces owned-only decks |
 
 ## How a match works
 
@@ -95,7 +100,7 @@ seed + champions ─► init ─► step(entry 0) ─► step(entry 1) ─► �
 - HMAC seat tickets;
 - a signed `/ledger` submission.
 
-A node can therefore host a Deckwright title and settle its matches on chain without changes to the game code. See `plugin/skills/deckwright/references/litnode.md`.
+A node can therefore host a Tessaract title and settle its matches on chain without changes to the game code. See `plugin/skills/tessaract/references/litnode.md`.
 
 **Wallet decks** (`deckRules.mode: "declared"`): each player builds a deck, for example from the cards their wallet holds.
 - The deck is declared card by card at the start of the match log, so any node replays it.
@@ -114,29 +119,24 @@ A node can therefore host a Deckwright title and settle its matches on chain wit
 
 **Replays and spectators.** A match is fully described by its record: the ruleset, the seed, the players, their champions and the input log. That is what LitNode replays.
 - **Share replay** turns a finished match into a link. The record rides in the URL fragment (`#replay=…`), so no server stores it, and anyone with the link watches the match move by move.
-- `deckwright replay "<link>"` replays a link from the command line and prints the result.
+- `tessaract replay "<link>"` replays a link from the command line and prints the result.
 - Spectators join a relay match with `?relay=<ws url>&watch=1`. They see every move and can't act. `TCG_WATCH_DELAY_MS` delays them, and is 2 minutes in ranked by default.
 
 **Not in v1:**
 - hidden hands (the duel is open-information);
 - more than two players.
 
-## Working on Deckwright itself
+## Working on Tessaract itself
 
 ```bash
 pnpm install          # also builds dist/ (the CLI)
-pnpm deckwright <cmd> # run any command from source (tsx)
+pnpm tessaract <cmd> # run any command from source (tsx)
 pnpm dev              # the demo site at http://127.0.0.1:4173
 pnpm test             # rules, ruleset compatibility, EVM decoding, chain checks, relay, CLI, site bundle
 pnpm typecheck
 ```
 
-The demo site was built with:
-
-```bash
-pnpm snapshot 0x138F1A2E48111aFD0Af865F421F05Fd1B0A72721 --chain liteforge --out collection
-pnpm web games/rapture-duel.game.json --collection collection/cards.json
-```
+The site in `web/` is the client template `create` copies into every game, built here with the starter game (`pnpm web templates/starter.game.json`).
 
 Layout:
 
@@ -145,12 +145,11 @@ src/core/        pure rules engine (no DOM, Node, clock or randomness)
 src/client/      match sessions: vs bot, relay, LitNode arcade bridge
 src/litnode/     LitNode title adapter
 src/tools/       the commands (cli.ts dispatches to them)
-plugin/          the Claude Code plugin: skills/deckwright (SKILL.md + references), .claude-plugin/plugin.json
+plugin/          the Claude Code plugin: skills/tessaract (SKILL.md + references), .claude-plugin/plugin.json
 .claude-plugin/  marketplace.json (this repo is the plugin's marketplace)
-games/           game configs
 templates/       starter game, LitNode gauntlet config
 web/             the game client: app.js wires the flows, ui/ has the screens, arena and cards, styles/ the design;
-                 engine/, data/ and assets/art/ are generated by `deckwright web`
+                 engine/, data/ and assets/art/ are generated by `tessaract web`
 adapters/        optional Genesys engine HUD + scene node
 test/            node:test suites
 ```
@@ -159,8 +158,8 @@ test/            node:test suites
 
 ## License
 
-- **Code:** Apache-2.0 (`LICENSE`).
-- **Rapture demo content** (character art, names, collection snapshot): not covered. © LitVM Games, all rights reserved. See `NOTICE`.
+- **Code:** Apache-2.0 (`LICENSE`). See `NOTICE`.
+- Tessaract supports the Rapture collection's traits (Kinds, its element cycle), but ships no Rapture art or names. Those live in [Rapture TCG](https://github.com/strodanodev/rapture-tcg), © LitVM Games.
 
 ## Deploy
 
@@ -170,4 +169,4 @@ The site is static: `web/` plus the headers in `vercel.json` (CSP included). Any
 vercel deploy --prod
 ```
 
-There is no build step on the host. Rebuild with `deckwright web` and commit the generated `web/engine`, `web/data` and `web/assets/art` before deploying.
+There is no build step on the host. Rebuild with `tessaract web` before deploying; a game's generated `web/engine`, `web/data` and `web/assets/art` are what gets served.

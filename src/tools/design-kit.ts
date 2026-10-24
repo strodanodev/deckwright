@@ -1,8 +1,8 @@
 /**
- * The design kit `deckwright import` applies to a collection: each element gets an archetype, and the archetype
+ * The design kit `tessaract import` applies to a collection: each element gets an archetype, and the archetype
  * gives its units keywords and abilities by tier (1 = cheapest, 5 = rarest), its own spells and relic, a token
  * unit, and a hero power for champions of that element. It turns a pile of stat lines into a set with
- * interaction; every number is a starting point for `deckwright sim` to tune.
+ * interaction; every number is a starting point for `tessaract sim` to tune.
  */
 import type { Ability, CardDef, HeroPower, Keyword } from '../core/types';
 
@@ -109,7 +109,7 @@ export function kitPowers(elements: Array<{ id: string; name: string }>, arch: R
     const id = slug(`${e.name} power`);
     switch (arch[e.id]) {
       case 'aggro': powers.push({ id, name: `${e.name} Strike`, cost: 2, element: e.id, effect: dmg(2, 'enemy-champion') }); break;
-      // Costs tuned on Rapture Duel v4 (sim, mixed decks): each power wins 45-56% against the others.
+      // Costs tuned on Rapture TCG v4 (sim, mixed decks): each power wins 45-56% against the others.
       case 'control': powers.push({ id, name: `${e.name} Bolt`, cost: 3, element: e.id, effect: dmg(1, 'enemy') }); break;
       case 'defense': powers.push({ id, name: `${e.name} Ward`, cost: 2, element: e.id, effect: { op: 'shield' } }); break;
       case 'value': if (hasToken) powers.push({ id, name: `${e.name} Forge`, cost: 1, element: e.id, effect: { op: 'summon', card: TOKEN } }); break;

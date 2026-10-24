@@ -1,9 +1,9 @@
 /**
  * Serve the game site (./web) locally with the same response headers production sends (./vercel.json),
  * so a CSP violation shows up on localhost, not after a deploy. One local-only addition: the dev relay
- * (`TCG_DEV=1 deckwright relay`, ws://127.0.0.1:7830) joins connect-src here and nowhere else.
+ * (`TCG_DEV=1 tessaract relay`, ws://127.0.0.1:7830) joins connect-src here and nowhere else.
  *
- *   deckwright dev [--port 4173] [--dir web]
+ *   tessaract dev [--port 4173] [--dir web]
  *
  * Binds to 127.0.0.1 only: open http://127.0.0.1:<port>, not localhost (which may resolve to IPv6).
  */
@@ -16,7 +16,7 @@ import { pkgPath } from './paths';
 
 const args = parseArgs();
 const WEB = resolve(flag(args, 'dir') ?? 'web');
-if (!existsSync(join(WEB, 'index.html'))) die(`no site at ${WEB} (run \`deckwright web <game.json>\` first, or pass --dir)`);
+if (!existsSync(join(WEB, 'index.html'))) die(`no site at ${WEB} (run \`tessaract web <game.json>\` first, or pass --dir)`);
 const vercelJson = existsSync('vercel.json') ? resolve('vercel.json') : pkgPath('vercel.json');
 const LOCAL_RELAY = 'ws://127.0.0.1:7830 ws://localhost:7830';
 type Rule = { source: string; headers: Array<{ key: string; value: string }> };
@@ -39,5 +39,5 @@ const server = createServer((req, res) => {
 const port = Number(flag(args, 'port') ?? process.env.PORT ?? 4173);
 server.listen(port, '127.0.0.1', () => {
   const addr = server.address();
-  console.log(`Deckwright dev server on http://127.0.0.1:${typeof addr === 'object' && addr ? addr.port : port} (serving ${WEB})`);
+  console.log(`Tessaract dev server on http://127.0.0.1:${typeof addr === 'object' && addr ? addr.port : port} (serving ${WEB})`);
 });

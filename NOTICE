@@ -1,18 +1,13 @@
-Deckwright
+Tessaract (formerly Deckwright)
 Copyright 2026 LitVM Games
 
-The Deckwright source code, templates, tools and documentation in this repository are licensed under
+The Tessaract source code, templates, tools and documentation in this repository are licensed under
 the Apache License, Version 2.0 (see LICENSE).
 
-NOT covered by that license — the Rapture demo content:
+Earlier versions of this repository (as Deckwright) included Rapture demo content: character paintings,
+the Rapture ARC 1 collection snapshot and a game file with Rapture names. That content was never covered
+by the license: Rapture characters, names and artwork are (c) LitVM Games, all rights reserved. It now
+lives in Rapture TCG (https://github.com/strodanodev/rapture-tcg), which fetches the art at build time.
 
-  - web/assets/art/            (Rapture character paintings)
-  - web/data/collection.json   (the Rapture ARC 1 collection snapshot: names, epithets, traits, art references)
-  - web/data/game.json and games/rapture-duel.game.json, as far as they reproduce Rapture names and traits
-
-Rapture characters, names and artwork are © LitVM Games, all rights reserved. They are included only so
-the demo game can run. Using them in your own game or site needs permission from LitVM Games; the terms
-for building on Rapture characters will be published separately.
-
-Third-party code bundled in web/engine/ and dist/ at build time is the Deckwright source above. esbuild
+Third-party code bundled in web/engine/ and dist/ at build time is the Tessaract source above. esbuild
 (MIT) is a runtime dependency, not redistributed here.

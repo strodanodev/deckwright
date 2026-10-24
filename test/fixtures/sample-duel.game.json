@@ -1,0 +1,947 @@
+{
+  "title": "Sample Duel",
+  "description": "Card duel built from Sample Collection (0x0000000000000000000000000000000000000001 on chain 4441).",
+  "litnode": {
+    "rulesetId": "sample-duel.v1",
+    "tickRate": 4,
+    "maxTicks": 600,
+    "modes": [
+      "ranked",
+      "casual"
+    ],
+    "eloK": 24
+  },
+  "elements": [
+    {
+      "id": "neutral",
+      "name": "Neutral",
+      "color": "#b8b8b8"
+    },
+    {
+      "id": "air",
+      "name": "Air",
+      "beats": [
+        "earth"
+      ]
+    },
+    {
+      "id": "earth",
+      "name": "Earth",
+      "beats": [
+        "fire"
+      ]
+    },
+    {
+      "id": "fire",
+      "name": "Fire",
+      "beats": [
+        "water"
+      ]
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "beats": [
+        "air"
+      ]
+    }
+  ],
+  "champion": {
+    "life": {
+      "stat": "resilience",
+      "min": 18,
+      "max": 24
+    },
+    "spellPower": {
+      "stat": "intelligence",
+      "min": 0,
+      "max": 2
+    },
+    "unitAttack": {
+      "stat": "strength",
+      "min": 0,
+      "max": 1
+    },
+    "openingHand": {
+      "stat": "agility",
+      "min": 3,
+      "max": 5
+    },
+    "powers": [
+      {
+        "id": "air-power",
+        "name": "Air Strike",
+        "cost": 2,
+        "element": "air",
+        "effect": {
+          "op": "damage",
+          "amount": 2,
+          "target": "enemy-champion"
+        }
+      },
+      {
+        "id": "earth-power",
+        "name": "Earth Bolt",
+        "cost": 3,
+        "element": "earth",
+        "effect": {
+          "op": "damage",
+          "amount": 1,
+          "target": "enemy"
+        }
+      },
+      {
+        "id": "fire-power",
+        "name": "Fire Ward",
+        "cost": 2,
+        "element": "fire",
+        "effect": {
+          "op": "shield"
+        }
+      },
+      {
+        "id": "water-power",
+        "name": "Water Forge",
+        "cost": 1,
+        "element": "water",
+        "effect": {
+          "op": "summon",
+          "card": "construct"
+        }
+      },
+      {
+        "id": "rally",
+        "name": "Rally",
+        "cost": 2,
+        "effect": {
+          "op": "buff",
+          "attack": 1,
+          "health": 1
+        }
+      }
+    ]
+  },
+  "rules": {
+    "boardSlots": 5,
+    "relicSlots": 2,
+    "handLimit": 8,
+    "energyStart": 1,
+    "energyMax": 10,
+    "energyPerTurn": 1,
+    "elementBonus": 1,
+    "fatigue": true,
+    "secondPlayerEnergy": 1,
+    "secondPlayerCards": 1
+  },
+  "cards": [
+    {
+      "id": "ash",
+      "name": "Ash Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 2,
+      "attack": 2,
+      "health": 4,
+      "rarity": "uncommon",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "1"
+      },
+      "keywords": [
+        "shield"
+      ]
+    },
+    {
+      "id": "brine",
+      "name": "Brine Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 3,
+      "attack": 1,
+      "health": 3,
+      "rarity": "rare",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "2"
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cairn",
+      "name": "Cairn Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 3,
+      "attack": 1,
+      "health": 1,
+      "rarity": "rare",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "3"
+      },
+      "keywords": [
+        "lifesteal"
+      ]
+    },
+    {
+      "id": "drift",
+      "name": "Drift Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 2,
+      "attack": 3,
+      "health": 1,
+      "rarity": "uncommon",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "4"
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "attack",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-champion"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ember",
+      "name": "Ember Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "rarity": "common",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "5"
+      },
+      "keywords": [
+        "guard"
+      ]
+    },
+    {
+      "id": "fen",
+      "name": "Fen Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 3,
+      "attack": 3,
+      "health": 2,
+      "rarity": "rare",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "6"
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gale",
+      "name": "Gale Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 2,
+      "attack": 1,
+      "health": 1,
+      "rarity": "uncommon",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "7"
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-unit"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hearth",
+      "name": "Hearth Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 4,
+      "attack": 3,
+      "health": 5,
+      "rarity": "epic",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "8"
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "iris",
+      "name": "Iris Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 3,
+      "attack": 4,
+      "health": 1,
+      "rarity": "rare",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "9"
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "turnStart",
+          "effect": {
+            "op": "buff",
+            "health": 1,
+            "target": "this"
+          }
+        }
+      ]
+    },
+    {
+      "id": "jade",
+      "name": "Jade Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "rarity": "common",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "10"
+      },
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
+    },
+    {
+      "id": "kiln",
+      "name": "Kiln Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 4,
+      "attack": 5,
+      "health": 5,
+      "rarity": "epic",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "11"
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "loam",
+      "name": "Loam Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 1,
+      "attack": 3,
+      "health": 1,
+      "rarity": "common",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "12"
+      },
+      "keywords": [
+        "haste"
+      ]
+    },
+    {
+      "id": "mist",
+      "name": "Mist Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 5,
+      "attack": 6,
+      "health": 6,
+      "rarity": "legendary",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "13"
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "shield",
+            "target": "all-own-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "nettle",
+      "name": "Nettle Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 4,
+      "attack": 3,
+      "health": 3,
+      "rarity": "epic",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "14"
+      },
+      "keywords": [
+        "poison",
+        "shield"
+      ]
+    },
+    {
+      "id": "onyx",
+      "name": "Onyx Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 5,
+      "attack": 5,
+      "health": 4,
+      "rarity": "legendary",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "15"
+      },
+      "keywords": [
+        "lifesteal"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 2,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pyre",
+      "name": "Pyre Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 2,
+      "attack": 1,
+      "health": 4,
+      "rarity": "uncommon",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "16"
+      },
+      "keywords": [
+        "rush"
+      ],
+      "abilities": [
+        {
+          "on": "attack",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "enemy-champion"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quill",
+      "name": "Quill Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 2,
+      "attack": 1,
+      "health": 1,
+      "rarity": "uncommon",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "17"
+      },
+      "keywords": [
+        "shield"
+      ]
+    },
+    {
+      "id": "rime",
+      "name": "Rime Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 3,
+      "attack": 3,
+      "health": 2,
+      "rarity": "rare",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "18"
+      },
+      "keywords": [
+        "shield"
+      ],
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sable",
+      "name": "Sable Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 4,
+      "attack": 5,
+      "health": 5,
+      "rarity": "epic",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "19"
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "thorn",
+      "name": "Thorn Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 1,
+      "attack": 3,
+      "health": 1,
+      "rarity": "common",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "20"
+      },
+      "keywords": [
+        "haste"
+      ]
+    },
+    {
+      "id": "umber",
+      "name": "Umber Sentinel",
+      "type": "unit",
+      "element": "fire",
+      "cost": 5,
+      "attack": 4,
+      "health": 3,
+      "rarity": "legendary",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "21"
+      },
+      "keywords": [
+        "guard"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "shield",
+            "target": "all-own-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "vale",
+      "name": "Vale Sentinel",
+      "type": "unit",
+      "element": "water",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "rarity": "common",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "22"
+      },
+      "abilities": [
+        {
+          "on": "death",
+          "effect": {
+            "op": "summon",
+            "card": "construct"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wisp",
+      "name": "Wisp Sentinel",
+      "type": "unit",
+      "element": "earth",
+      "cost": 4,
+      "attack": 2,
+      "health": 2,
+      "rarity": "epic",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "23"
+      },
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 1,
+            "target": "all-enemy-units"
+          }
+        }
+      ]
+    },
+    {
+      "id": "yarrow",
+      "name": "Yarrow Sentinel",
+      "type": "unit",
+      "element": "air",
+      "cost": 5,
+      "attack": 6,
+      "health": 5,
+      "rarity": "legendary",
+      "token": {
+        "chainId": 4441,
+        "collection": "0x0000000000000000000000000000000000000001",
+        "tokenId": "24"
+      },
+      "keywords": [
+        "haste"
+      ],
+      "abilities": [
+        {
+          "on": "play",
+          "effect": {
+            "op": "damage",
+            "amount": 3,
+            "target": "enemy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tempering",
+      "name": "Tempering",
+      "type": "spell",
+      "element": "neutral",
+      "cost": 1,
+      "effect": {
+        "op": "buff",
+        "attack": 2,
+        "health": 1
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "bellows",
+      "name": "Bellows",
+      "type": "spell",
+      "element": "neutral",
+      "cost": 1,
+      "effect": {
+        "op": "energy",
+        "amount": 2
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "eternal-forge",
+      "name": "Eternal Forge",
+      "type": "relic",
+      "element": "neutral",
+      "cost": 3,
+      "effect": {
+        "op": "energy",
+        "amount": 1
+      },
+      "rarity": "epic"
+    },
+    {
+      "id": "air-burst",
+      "name": "Air Burst",
+      "type": "spell",
+      "element": "air",
+      "cost": 1,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "enemy"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "air-surge",
+      "name": "Air Surge",
+      "type": "spell",
+      "element": "air",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 5,
+        "target": "enemy"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "air-idol",
+      "name": "Air Idol",
+      "type": "relic",
+      "element": "air",
+      "cost": 3,
+      "effect": {
+        "op": "damage",
+        "amount": 1
+      },
+      "rarity": "uncommon"
+    },
+    {
+      "id": "earth-lash",
+      "name": "Earth Lash",
+      "type": "spell",
+      "element": "earth",
+      "cost": 2,
+      "effect": {
+        "op": "damage",
+        "amount": 3,
+        "target": "enemy-unit"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "earth-insight",
+      "name": "Earth Insight",
+      "type": "spell",
+      "element": "earth",
+      "cost": 3,
+      "effect": {
+        "op": "draw",
+        "amount": 2
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "earth-tide",
+      "name": "Earth Tide",
+      "type": "spell",
+      "element": "earth",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "all-enemy-units"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "fire-ward",
+      "name": "Fire Ward",
+      "type": "spell",
+      "element": "fire",
+      "cost": 1,
+      "effect": {
+        "op": "shield",
+        "target": "own-unit"
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "fire-quake",
+      "name": "Fire Quake",
+      "type": "spell",
+      "element": "fire",
+      "cost": 4,
+      "effect": {
+        "op": "damage",
+        "amount": 2,
+        "target": "all-units"
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "fire-bastion",
+      "name": "Fire Bastion",
+      "type": "relic",
+      "element": "fire",
+      "cost": 3,
+      "effect": {
+        "op": "shield",
+        "target": "newest-own-unit"
+      },
+      "rarity": "uncommon"
+    },
+    {
+      "id": "water-assembly",
+      "name": "Water Assembly",
+      "type": "spell",
+      "element": "water",
+      "cost": 2,
+      "effect": {
+        "op": "summon",
+        "card": "construct",
+        "count": 2
+      },
+      "rarity": "common"
+    },
+    {
+      "id": "water-overclock",
+      "name": "Water Overclock",
+      "type": "spell",
+      "element": "water",
+      "cost": 3,
+      "effect": {
+        "op": "buff",
+        "attack": 3,
+        "health": 3
+      },
+      "rarity": "rare"
+    },
+    {
+      "id": "construct",
+      "name": "Construct",
+      "type": "unit",
+      "element": "water",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "rarity": "common"
+    }
+  ],
+  "deck": {
+    "ash": 1,
+    "brine": 1,
+    "cairn": 1,
+    "drift": 1,
+    "ember": 1,
+    "fen": 1,
+    "gale": 1,
+    "hearth": 1,
+    "iris": 1,
+    "jade": 1,
+    "kiln": 1,
+    "loam": 1,
+    "mist": 1,
+    "nettle": 1,
+    "onyx": 1,
+    "pyre": 1,
+    "quill": 1,
+    "rime": 1,
+    "sable": 1,
+    "thorn": 1,
+    "umber": 1,
+    "vale": 1,
+    "wisp": 1,
+    "yarrow": 1,
+    "tempering": 2,
+    "bellows": 2,
+    "eternal-forge": 2,
+    "air-burst": 1,
+    "air-surge": 1,
+    "air-idol": 1,
+    "earth-lash": 1,
+    "earth-insight": 1,
+    "earth-tide": 1,
+    "fire-ward": 1,
+    "fire-quake": 1,
+    "fire-bastion": 1,
+    "water-assembly": 1,
+    "water-overclock": 1
+  },
+  "deckRules": {
+    "mode": "declared",
+    "size": 30,
+    "maxCopies": 2
+  }
+}

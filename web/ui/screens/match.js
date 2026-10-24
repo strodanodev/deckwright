@@ -2,7 +2,7 @@
 // relics), the two lanes on the dais, your hand fanned along the bottom, the turn medallion and the narration, turn
 // banners, damage floaters, the fallen feed, the battle menu, the result, and (replays, spectators) the view dock.
 // The rules decide everything: the HUD only asks them what is legal and draws the state.
-import { decode, Op, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, describeEffect, PuzzleSession } from "../../engine/deckwright.js";
+import { decode, Op, ENEMY_CHAMPION, enemyUnit, ownUnit, endTurn, describeEffect, PuzzleSession } from "../../engine/tessaract.js";
 import { h, icon, stagger, toast } from "../dom.js";
 import { createResult } from "../result.js";
 

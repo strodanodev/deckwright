@@ -1,4 +1,4 @@
-// Deckwright (carried over from the FORGE hall) — dependency-free EIP-1193 wallet layer for the LitVM Liteforge testnet (MetaMask first).
+// Tessaract (carried over from the FORGE hall) — dependency-free EIP-1193 wallet layer for the LitVM Liteforge testnet (MetaMask first).
 //
 // One createWallet() per page. It finds the wallet (EIP-6963, then window.ethereum), connects only when the player
 // asks, remembers that they did so the next page load can restore the session without a popup, keeps address/chain
@@ -186,7 +186,7 @@ export function chainParams(chain) {
   return p;
 }
 
-const STORE_KEY = "deckwright.wallet.v1";
+const STORE_KEY = "tessaract.wallet.v1";
 /** localStorage, or null when it is missing or unusable (private mode, sandboxed iframe, Node's stub). */
 function defaultStorage() {
   try {

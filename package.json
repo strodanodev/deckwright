@@ -1,20 +1,21 @@
 {
-  "name": "deckwright",
-  "version": "0.7.0",
+  "name": "tessaract",
+  "version": "0.8.0",
   "private": true,
-  "description": "Deckwright: a lightweight Web3 trading card game maker. One JSON file is a game; ERC-6699 agents are champions; matches replay deterministically and are ready for LitNode settlement.",
+  "description": "Tessaract: a lightweight Web3 trading card game maker. One JSON file is a game; ERC-6699 agents are champions; matches replay deterministically and are ready for LitNode settlement.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/strodanodev/deckwright.git"
+    "url": "git+https://github.com/strodanodev/tessaract.git"
   },
-  "homepage": "https://github.com/strodanodev/deckwright#readme",
+  "homepage": "https://github.com/strodanodev/tessaract#readme",
   "bugs": {
-    "url": "https://github.com/strodanodev/deckwright/issues"
+    "url": "https://github.com/strodanodev/tessaract/issues"
   },
   "type": "module",
   "packageManager": "pnpm@12.10.1",
   "bin": {
+    "tessaract": "dist/cli.js",
     "deckwright": "dist/cli.js"
   },
   "files": [
@@ -38,7 +39,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "deckwright": "tsx src/cli.ts",
+    "tessaract": "tsx src/cli.ts",
     "new": "tsx src/cli.ts new",
     "import": "tsx src/cli.ts import",
     "snapshot": "tsx src/cli.ts snapshot",

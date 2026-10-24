@@ -2,7 +2,7 @@
  * Check a shared match: rebuild it from its record and print how it ended. A record replays to the same end on
  * every machine, so this settles "what happened in that match" without trusting anyone's screen.
  *
- *   deckwright replay <replay link | code | record.json> [--game <game.json>] [--out record.json]
+ *   tessaract replay <replay link | code | record.json> [--game <game.json>] [--out record.json]
  *
  * The game is found by the record's rulesetId among games/*.game.json unless --game names it.
  */
@@ -17,7 +17,7 @@ import { createRules } from '../core/rules';
 import type { GameConfig } from '../core/types';
 import { die, flag, parseArgs, readGame } from './common';
 
-const usage = 'usage: deckwright replay <replay link | code | record.json> [--game <game.json>] [--out record.json]';
+const usage = 'usage: tessaract replay <replay link | code | record.json> [--game <game.json>] [--out record.json]';
 const args = parseArgs();
 const input = args._[0] ?? die(usage);
 

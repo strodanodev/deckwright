@@ -1,4 +1,4 @@
-// Deckwright (carried over from the FORGE hall) — just enough ABI for the PackShopV2 client: hex helpers, encoders (static words plus the uint[] / bytes[]
+// Tessaract (carried over from the FORGE hall) — just enough ABI for the PackShopV2 client: hex helpers, encoders (static words plus the uint[] / bytes[]
 // arrays openPack takes), word/array decoders, the PackShopV2 log and view decoders and revert-data decoding.
 // Dependency-free, and there is no keccak in the browser, so every function selector, event topic0 and error selector
 // below is a hard-coded constant. web/test/abi.test.mjs proves each one equals ethers' value for the compiled

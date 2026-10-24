@@ -1,8 +1,8 @@
-// Deckwright — the game client. One JSON file is the game (engine/deckwright.js and data/, built by `deckwright web`);
+// Tessaract — the game client. One JSON file is the game (engine/tessaract.js and data/, built by `tessaract web`);
 // the rules here are the same code the relay and the LitNode ruleset run, so every match replays identically.
 //
 //   ./                                   title screen: practice, Gauntlet, daily puzzle, profile
-//   ?relay=ws://127.0.0.1:7830&name=a    a two-player match on a dev relay (`TCG_DEV=1 deckwright relay`)
+//   ?relay=ws://127.0.0.1:7830&name=a    a two-player match on a dev relay (`TCG_DEV=1 tessaract relay`)
 //   ?relay=…&watch=1                     spectate it
 //   #replay=<code>                       replay a shared match (the code is the whole match record)
 //
@@ -11,7 +11,7 @@
 import {
   compileGame, createRules, LocalBotSession, RelaySession, ReplaySession, PuzzleSession, encodeRecord, decodeRecord, REPLAY_PARAM,
   statsFromCore, describeEffect, createGauntlet, createPuzzles, loadProfile, saveProfile, addMatch, summarize, utcDate,
-} from "./engine/deckwright.js";
+} from "./engine/tessaract.js";
 import { createWallet } from "./lib/wallet.js";
 import { createHoldings } from "./lib/holdings.js";
 import { shortAddress } from "./lib/util.js";
@@ -76,7 +76,7 @@ async function refreshOwned() {
     try {
       const read = await holdings.read(address);
       for (const c of (await holdings.identify(read.tokens)).values()) if (c) owned.add(String(c.tokenId));
-    } catch (e) { console.warn("[deckwright] could not read holdings", e); }
+    } catch (e) { console.warn("[tessaract] could not read holdings", e); }
   }
   for (const fn of walletListeners) fn();
 }
@@ -87,7 +87,7 @@ const arena = createArena(document.getElementById("arena"));
 const app = {
   game, rules, snap, byToken, arena, prefs, owned, gauntlet, puzzles, toast,
   relay: !!RELAY, watch: WATCH, requireOwned: !!RELAY && q.get("owned") === "1",
-  funnel: !!document.querySelector('meta[name="deckwright-funnel"]'),
+  funnel: !!document.querySelector('meta[name="tessaract-funnel"]'),
   hasWallet: !!holdings,
   elementColor, artOf, nameOf, statsOf,
   champName: (tokenId) => (tokenId ? byToken.get(String(tokenId))?.name ?? `#${tokenId}` : "Base champion"),
@@ -334,5 +334,5 @@ if (!opened) {
   if (WATCH) {
     const session = RelaySession.watch(rules, RELAY);
     void versusInto(session, { kind: "watch", label: "Spectating" }, { names: ["Player one", "Player two"], subs: ["Spectating", "Live"], champs: [null, null], realm: "valhalla" }, () => !!session.state);
-  } else void go("home").then(() => performance.mark("deckwright:title"));   // time to the title screen, for profiling
+  } else void go("home").then(() => performance.mark("tessaract:title"));   // time to the title screen, for profiling
 }

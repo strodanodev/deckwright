@@ -1,7 +1,7 @@
 /**
  * Scaffold a new game config from the starter template.
  *
- *   deckwright new <game-id> [--title "My Duel"] [--out games]
+ *   tessaract new <game-id> [--title "My Duel"] [--out games]
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -11,7 +11,7 @@ import { die, flag, parseArgs } from './common';
 import { pkgPath } from './paths';
 
 const args = parseArgs();
-const id = args._[0] ?? die('usage: deckwright new <game-id> [--title "My Duel"] [--out games]');
+const id = args._[0] ?? die('usage: tessaract new <game-id> [--title "My Duel"] [--out games]');
 if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) die(`game id must be kebab-case (got "${id}")`);
 const template = JSON.parse(readFileSync(pkgPath('templates', 'starter.game.json'), 'utf8')) as GameConfig;
 
@@ -24,4 +24,4 @@ if (existsSync(file)) die(`${file} already exists`);
 mkdirSync(outDir, { recursive: true });
 writeFileSync(file, `${JSON.stringify(game, null, 2)}\n`);
 console.log(`created ${file}`);
-console.log(`next: edit it, then: deckwright sim ${file}`);
+console.log(`next: edit it, then: tessaract sim ${file}`);

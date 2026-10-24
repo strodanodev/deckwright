@@ -1,0 +1,297 @@
+{
+  "collection": {
+    "name": "Sample Collection",
+    "chainId": 4441,
+    "address": "0x0000000000000000000000000000000000000001"
+  },
+  "cards": [
+    {
+      "tokenId": "1",
+      "slug": "ash",
+      "name": "Ash Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 21812,
+        "agi": 20224,
+        "res": 54016,
+        "int": 1792
+      }
+    },
+    {
+      "tokenId": "2",
+      "slug": "brine",
+      "name": "Brine Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 11264,
+        "agi": 60416,
+        "res": 44032,
+        "int": 27648
+      }
+    },
+    {
+      "tokenId": "3",
+      "slug": "cairn",
+      "name": "Cairn Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 11264,
+        "agi": 60480,
+        "res": 18432,
+        "int": 55360
+      }
+    },
+    {
+      "tokenId": "4",
+      "slug": "drift",
+      "name": "Drift Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 50048,
+        "agi": 28160,
+        "res": 1600,
+        "int": 22784
+      }
+    },
+    {
+      "tokenId": "5",
+      "slug": "ember",
+      "name": "Ember Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 5432,
+        "agi": 18720,
+        "res": 4864,
+        "int": 18176
+      }
+    },
+    {
+      "tokenId": "6",
+      "slug": "fen",
+      "name": "Fen Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 27392,
+        "agi": 48896,
+        "res": 33600,
+        "int": 37376
+      }
+    },
+    {
+      "tokenId": "7",
+      "slug": "gale",
+      "name": "Gale Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 23040,
+        "agi": 33344,
+        "res": 9472,
+        "int": 61760
+      }
+    },
+    {
+      "tokenId": "8",
+      "slug": "hearth",
+      "name": "Hearth Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 26624,
+        "agi": 30784,
+        "res": 58232,
+        "int": 39424
+      }
+    },
+    {
+      "tokenId": "9",
+      "slug": "iris",
+      "name": "Iris Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 49664,
+        "agi": 51712,
+        "res": 12800,
+        "int": 31232
+      }
+    },
+    {
+      "tokenId": "10",
+      "slug": "jade",
+      "name": "Jade Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 8704,
+        "agi": 43584,
+        "res": 11520,
+        "int": 22848
+      }
+    },
+    {
+      "tokenId": "11",
+      "slug": "kiln",
+      "name": "Kiln Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 45056,
+        "agi": 8192,
+        "res": 53248,
+        "int": 49152
+      }
+    },
+    {
+      "tokenId": "12",
+      "slug": "loam",
+      "name": "Loam Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 61440,
+        "agi": 24576,
+        "res": 4096,
+        "int": 64
+      }
+    },
+    {
+      "tokenId": "13",
+      "slug": "mist",
+      "name": "Mist Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 51968,
+        "agi": 40704,
+        "res": 58112,
+        "int": 55040
+      }
+    },
+    {
+      "tokenId": "14",
+      "slug": "nettle",
+      "name": "Nettle Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 47872,
+        "agi": 52992,
+        "res": 21248,
+        "int": 34560
+      }
+    },
+    {
+      "tokenId": "15",
+      "slug": "onyx",
+      "name": "Onyx Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 43776,
+        "agi": 65280,
+        "res": 49920,
+        "int": 14144
+      }
+    },
+    {
+      "tokenId": "16",
+      "slug": "pyre",
+      "name": "Pyre Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 13952,
+        "agi": 25600,
+        "res": 50176,
+        "int": 41984
+      }
+    },
+    {
+      "tokenId": "17",
+      "slug": "quill",
+      "name": "Quill Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 1024,
+        "agi": 58368,
+        "res": 17472,
+        "int": 48896
+      }
+    },
+    {
+      "tokenId": "18",
+      "slug": "rime",
+      "name": "Rime Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 33600,
+        "agi": 37504,
+        "res": 36864,
+        "int": 32768
+      }
+    },
+    {
+      "tokenId": "19",
+      "slug": "sable",
+      "name": "Sable Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 45056,
+        "agi": 8192,
+        "res": 53248,
+        "int": 49152
+      }
+    },
+    {
+      "tokenId": "20",
+      "slug": "thorn",
+      "name": "Thorn Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 61440,
+        "agi": 24576,
+        "res": 4096,
+        "int": 64
+      }
+    },
+    {
+      "tokenId": "21",
+      "slug": "umber",
+      "name": "Umber Sentinel",
+      "element": "Fire",
+      "stats": {
+        "str": 52096,
+        "agi": 54784,
+        "res": 20025,
+        "int": 56448
+      }
+    },
+    {
+      "tokenId": "22",
+      "slug": "vale",
+      "name": "Vale Sentinel",
+      "element": "Water",
+      "stats": {
+        "str": 4608,
+        "agi": 55808,
+        "res": 512,
+        "int": 2560
+      }
+    },
+    {
+      "tokenId": "23",
+      "slug": "wisp",
+      "name": "Wisp Sentinel",
+      "element": "Earth",
+      "stats": {
+        "str": 29184,
+        "agi": 47616,
+        "res": 25088,
+        "int": 59904
+      }
+    },
+    {
+      "tokenId": "24",
+      "slug": "yarrow",
+      "name": "Yarrow Sentinel",
+      "element": "Air",
+      "stats": {
+        "str": 53760,
+        "agi": 39424,
+        "res": 49728,
+        "int": 25856
+      }
+    }
+  ]
+}

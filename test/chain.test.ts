@@ -13,7 +13,7 @@ import { createChainCheck } from '../src/tools/chain-check';
 import { createRpc, SEL } from '../src/tools/evm';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const GAME_PATH = join(ROOT, 'games', 'rapture-duel.game.json');
+const GAME_PATH = join(ROOT, 'test', 'fixtures', 'sample-duel.game.json');
 const game = JSON.parse(readFileSync(GAME_PATH, 'utf8')) as GameConfig;
 const tokenCards = game.cards.map((c, i) => ({ i, tokenId: c.token ? String(c.token.tokenId) : null })).filter((c) => c.tokenId);
 const OWNED = tokenCards[0], UNOWNED = tokenCards[1];

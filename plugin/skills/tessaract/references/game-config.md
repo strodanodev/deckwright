@@ -39,7 +39,7 @@ The types are defined in `src/core/types.ts` and validated by `validateGame()` i
 **Helpers**
 - `rules.suggestedDeclaration(state, side)` fills a deck from the suggestion. Bots use it, and so does the relay when a player hasn't declared by its deadline (`TCG_DECK_MS`, default 90 s).
 
-Balance tip: smaller decks raise the first-player advantage, and random wallet decks can favour the first player more than the suggested deck does. Check both with `deckwright sim --decks suggested` and `--decks random`. Rapture Duel uses 36 cards with `secondPlayerEnergy: 1` and `secondPlayerCards: 2`, which gives about 52–53% first-player wins either way.
+Balance tip: smaller decks raise the first-player advantage, and random wallet decks can favour the first player more than the suggested deck does. Check both with `tessaract sim --decks suggested` and `--decks random`. Rapture TCG uses 36 cards with `secondPlayerEnergy: 1` and `secondPlayerCards: 2`, which gives about 52–53% first-player wins either way.
 
 ## `litnode`
 
@@ -84,7 +84,7 @@ A player with no champion, and any stat a champion lacks, counts as 0, so they g
   - `element` / `kind`: the champion card's element or kind (the card whose `token.tokenId` is the champion's token);
   - `stat`: the champion's highest ERC-6699 stat.
 - An entry with no conditions is the default; players without a champion only match that one.
-- Power by element keeps NFT rarity out of it (powers are sidegrades). Rapture Duel uses element powers.
+- Power by element keeps NFT rarity out of it (powers are sidegrades). Rapture TCG uses element powers.
 
 ## `rules`
 

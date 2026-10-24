@@ -53,7 +53,7 @@ export function homeScreen(app) {
   const words = title.split(/\s+/);
   const logo = h("div", { class: "logo" },
     h("div", { class: "logo-emblem" }, icon("emblem"), h("div", { class: "logo-ring" })),
-    h("p", { class: "kicker", text: app.funnel ? "Deckwright presents" : "A Deckwright game" }),
+    h("p", { class: "kicker", text: app.funnel ? "Tessaract presents" : "A Tessaract game" }),
     h("h1", { class: "logo-word" }, h("span", { class: "gilded", text: words.length > 1 ? words.slice(0, -1).join(" ") : title }), words.length > 1 ? h("span", { class: "logo-sub", text: words[words.length - 1] }) : null),
     h("p", { class: "tagline", text: app.snap.cards.length ? `${app.snap.cards.length} champions of ${app.snap.collection.name}. Their on-chain stats shape every duel.` : app.game.description ?? "A trading card game." }));
 
@@ -62,7 +62,7 @@ export function homeScreen(app) {
     h("header", { class: "home-top" }, h("span", { class: "badge outline live", text: app.relay ? (app.watch ? "Spectating" : "Two-player match") : `Season 0 · ${app.snap.collection.name || "Practice"}` }), walletChip(app)),
     h("div", { class: "home-main" }, logo, menu),
     feature,
-    h("footer", { class: "home-foot" }, app.funnel ? h("span", { text: "Built with Deckwright · settled on LitNode" }) : h("span", null, "Made with ", h("a", { href: "https://github.com/strodanodev/deckwright", rel: "noopener", text: "Deckwright" }))));
+    h("footer", { class: "home-foot" }, app.funnel ? h("span", { text: "Built with Tessaract · settled on LitNode" }) : h("span", null, "Made with ", h("a", { href: "https://github.com/strodanodev/tessaract", rel: "noopener", text: "Tessaract" }))));
 
   app.onWallet(() => { for (const i of items) i.refresh(); });
   return {

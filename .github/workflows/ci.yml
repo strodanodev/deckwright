@@ -32,11 +32,13 @@ jobs:
       - name: Committed site engine matches the source
         # web/engine is generated; a rules change without `pnpm web` would ship stale rules to the demo.
         run: |
-          node dist/cli.js web games/rapture-duel.game.json --out "$RUNNER_TEMP/web" > /dev/null
-          diff -q <(tail -n +3 "$RUNNER_TEMP/web/engine/deckwright.js") <(tail -n +3 web/engine/deckwright.js)
+          node dist/cli.js web templates/starter.game.json --out "$RUNNER_TEMP/web" > /dev/null
+          diff -q <(tail -n +3 "$RUNNER_TEMP/web/engine/tessaract.js") <(tail -n +3 web/engine/tessaract.js)
 
-      - name: Demo game meets balance and fun targets
-        run: node dist/cli.js sim games/rapture-duel.game.json --matches 400 --decks mixed --strict
+      - name: Starter and the sample collection meet balance and fun targets
+        run: |
+          node dist/cli.js sim templates/starter.game.json --matches 400 --strict
+          node dist/cli.js sim test/fixtures/sample-duel.game.json --matches 400 --decks mixed --strict
 
       - name: Builder path (create, sim, LitNode compatibility)
         run: |

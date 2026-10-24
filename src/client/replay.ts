@@ -71,7 +71,7 @@ export async function decodeRecord(code: string): Promise<MatchRecord> {
 export function checkRecord(raw: unknown): MatchRecord {
   const r = raw as Partial<MatchRecord> | null;
   const id = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 128;
-  if (!r || r.v !== 1 || !id(r.rulesetId) || typeof r.seed !== 'string' || r.seed.length > 256) throw new Error('not a Deckwright match record');
+  if (!r || r.v !== 1 || !id(r.rulesetId) || typeof r.seed !== 'string' || r.seed.length > 256) throw new Error('not a Tessaract match record');
   const ps = r.participants;
   if (!Array.isArray(ps) || ps.length !== 2 || !ps.every(id) || ps[0] === ps[1]) throw new Error('a record needs two distinct participants');
   if (!Array.isArray(r.entries) || r.entries.length > MAX_ENTRIES) throw new Error('a record needs an input log');

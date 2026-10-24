@@ -1,4 +1,4 @@
-// Deckwright (carried over from the FORGE hall) — a tiny read-only JSON-RPC client for the public Liteforge RPC (plain fetch, no npm packages).
+// Tessaract (carried over from the FORGE hall) — a tiny read-only JSON-RPC client for the public Liteforge RPC (plain fetch, no npm packages).
 //
 // WHY reads bypass the wallet: MetaMask forwards a read to whatever RPC URL it saved when the network was added (that
 // can be slow, throttled or simply another node), it answers for whichever chain the wallet happens to be on (a

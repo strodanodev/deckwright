@@ -1,6 +1,6 @@
 // Card renderers: the game card (hand, deck forge, rewards), the unit token on the board, and the champion card (a
 // collection token: Rapture Chess's framed card with its foil). Colours: rarity frames the card, the element tints it.
-import { describeCard, KEYWORDS } from "../engine/deckwright.js";
+import { describeCard, KEYWORDS } from "../engine/tessaract.js";
 import { h, icon } from "./dom.js";
 
 const KIND_RARITY = { God: "legendary", Titan: "epic", King: "rare", Demigod: "uncommon", Mortal: "common" };

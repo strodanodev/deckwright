@@ -17,7 +17,7 @@ import { LocalBotSession, ReplaySession } from '../src/client/session';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const tsx = join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const load = (p: string): GameConfig => JSON.parse(readFileSync(join(ROOT, p), 'utf8')) as GameConfig;
-const RAPTURE = load('games/rapture-duel.game.json');
+const SAMPLE = load('test/fixtures/sample-duel.game.json');
 const STARTER_PATH = join(ROOT, 'templates', 'starter.game.json');
 const STARTER = load('templates/starter.game.json');
 
@@ -39,7 +39,7 @@ function botMatch(game: GameConfig, seed: string) {
 }
 
 test('a record survives the share code and replays to the same end', async () => {
-  const { rules, record, end } = botMatch(RAPTURE, 'replay-1');
+  const { rules, record, end } = botMatch(SAMPLE, 'replay-1');
   const code = await encodeRecord(record);
   assert.match(code, /^[A-Za-z0-9_-]+$/);
   assert.ok(code.length < 4000, `share code is ${code.length} chars`);
@@ -51,7 +51,7 @@ test('a record survives the share code and replays to the same end', async () =>
 });
 
 test('replay session: starts after the deck phase, seeks by move and turn, flips sides', () => {
-  const { rules, record, end } = botMatch(RAPTURE, 'replay-2');
+  const { rules, record, end } = botMatch(SAMPLE, 'replay-2');
   const r = new ReplaySession(rules, record);
   assert.equal(r.role, 'replay');
   assert.notEqual(r.state.phase, 'decks');
@@ -73,8 +73,8 @@ test('replay session: starts after the deck phase, seeks by move and turn, flips
 });
 
 test('a practice match records itself, champion tokens included', () => {
-  const rules = createRules(compileGame(RAPTURE));
-  const token = RAPTURE.cards.find((c) => c.token)!.token!.tokenId;
+  const rules = createRules(compileGame(SAMPLE));
+  const token = SAMPLE.cards.find((c) => c.token)!.token!.tokenId;
   const s = new LocalBotSession(rules, 'practice-1', { tokenId: String(token), stats: { strength: 30000 } });
   s.declareDeck(rules.game.suggestedDeck);
   s.close();
@@ -86,7 +86,7 @@ test('a practice match records itself, champion tokens included', () => {
 });
 
 test('untrusted records: wrong ruleset, garbage and bad shapes are refused; stats are normalized', async () => {
-  const { rules, record } = botMatch(RAPTURE, 'replay-3');
+  const { rules, record } = botMatch(SAMPLE, 'replay-3');
   assert.throws(() => replayStates(rules, { ...record, rulesetId: 'other-game.v1' }), /this replay is from other-game\.v1/);
   await assert.rejects(decodeRecord('not a code!'), /not a replay code/);
   await assert.rejects(decodeRecord('AAAA'), /not a replay code/);
@@ -96,10 +96,10 @@ test('untrusted records: wrong ruleset, garbage and bad shapes are refused; stat
   assert.deepEqual(odd.agents.alice, { stats: { strength: 65535, agility: 0, resilience: 0, intelligence: 0 } });
 });
 
-test('deckwright replay checks a share link from the command line', async () => {
-  const { record, end } = botMatch(RAPTURE, 'replay-4');
+test('tessaract replay checks a share link from the command line', async () => {
+  const { record, end } = botMatch(SAMPLE, 'replay-4');
   const link = `https://example.test/#replay=${await encodeRecord(record)}`;
-  const r = spawnSync(process.execPath, [tsx, join(ROOT, 'src', 'cli.ts'), 'replay', link], { encoding: 'utf8', cwd: ROOT });
+  const r = spawnSync(process.execPath, [tsx, join(ROOT, 'src', 'cli.ts'), 'replay', link, '--game', join(ROOT, 'test', 'fixtures', 'sample-duel.game.json')], { encoding: 'utf8', cwd: ROOT });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, new RegExp(`result\\s+${end.winner === 2 ? 'draw' : `${record.participants[end.winner as 0 | 1]} won`}`));
   assert.match(r.stdout, /state\s+sha256 [0-9a-f]{64}/);

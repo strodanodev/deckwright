@@ -3,7 +3,7 @@
  * every design's name, traits, image (downloaded, so the site serves it under its own CSP) and, when the
  * collection implements ERC-6699, its on-chain CoreStats.
  *
- *   deckwright snapshot <collection address> (--chain liteforge | --rpc <url> [--explorer <blockscout url>])
+ *   tessaract snapshot <collection address> (--chain liteforge | --rpc <url> [--explorer <blockscout url>])
  *        [--out collection] [--tokens 1,2,3] [--from-block N] [--registry <ERC6699Registry>]
  *        [--gateway <ipfs gateway>] [--dedupe image|name|none] [--kind-trait Kind]
  *        [--element-trait Element] [--no-art]
@@ -21,7 +21,7 @@ import { CHAINS, createRpc, decodeCoreStats, decodeString, encodeUintCall, pool,
 import type { CoreStats } from './evm';
 
 const args = parseArgs();
-const address = (args._[0] ?? die('usage: deckwright snapshot <collection address> (--chain liteforge | --rpc <url>) [--out collection]')).toLowerCase();
+const address = (args._[0] ?? die('usage: tessaract snapshot <collection address> (--chain liteforge | --rpc <url>) [--out collection]')).toLowerCase();
 if (!/^0x[0-9a-f]{40}$/.test(address)) die(`not an address: ${address}`);
 const preset = flag(args, 'chain') ? CHAINS[flag(args, 'chain')!] ?? die(`unknown --chain (known: ${Object.keys(CHAINS).join(', ')})`) : null;
 const rpcUrl = flag(args, 'rpc') ?? preset?.rpc ?? die('--rpc <url> or --chain <name> is required');

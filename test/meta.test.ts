@@ -9,7 +9,7 @@ import { addMatch, createGauntlet, createPuzzles, emptyProfile, loadProfile, MAX
 import type { MatchEntry, Store } from '../src/meta/index';
 
 const load = (p: string): GameConfig => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8')) as GameConfig;
-const RAPTURE = createRules(compileGame(load('../games/rapture-duel.game.json')));
+const SAMPLE = createRules(compileGame(load('./fixtures/sample-duel.game.json')));
 const STARTER = createRules(compileGame(load('../templates/starter.game.json')));
 const memory = (): Store & { data: Map<string, string> } => { const data = new Map<string, string>(); return { data, getItem: (k) => data.get(k) ?? null, setItem: (k, v) => { data.set(k, v); } }; };
 const match = (result: MatchEntry['result'], extra: Partial<MatchEntry> = {}): MatchEntry => ({ at: 0, mode: 'practice', result, turns: 10, ruleset: 'g.v1', ...extra });
@@ -38,10 +38,10 @@ test('profile: the puzzle streak counts consecutive days back from today (or yes
 });
 
 test('Gauntlet: legal decks, rising opponents, rewards that keep the deck legal, and the run ends on a loss or after eight', () => {
-  const g = createGauntlet(RAPTURE);
-  const dr = RAPTURE.game.config.deckRules!;
+  const g = createGauntlet(SAMPLE);
+  const dr = SAMPLE.game.config.deckRules!;
   const legal = (deck: number[]) => deck.length === dr.size && deck.every((c) => deck.filter((d) => d === c).length <= dr.maxCopies);
-  let run = g.start('seed-1', { tokenId: RAPTURE.game.cards.find((c) => c.token)!.token!.tokenId, stats: { resilience: 30000 } });
+  let run = g.start('seed-1', { tokenId: SAMPLE.game.cards.find((c) => c.token)!.token!.tokenId, stats: { resilience: 30000 } });
   assert.deepEqual(g.start('seed-1', { tokenId: run.champion.tokenId, stats: { resilience: 30000 } }, run.started), run, 'deterministic from the seed');
   assert.ok(legal(run.deck));
   const levels: number[] = [];
@@ -76,17 +76,17 @@ test('Gauntlet: blessings raise the champion stats that go into init, and fixed-
 });
 
 test('Gauntlet matches: the bot plays the opponent deck it was given', () => {
-  const g = createGauntlet(RAPTURE);
+  const g = createGauntlet(SAMPLE);
   const run = g.start('decks');
   const opp = g.opponent(run), me = g.player(run);
-  const s = new LocalBotSession(RAPTURE, 'decks-1', me, opp, { level: opp.level, foeDeck: opp.deck });
+  const s = new LocalBotSession(SAMPLE, 'decks-1', me, opp, { level: opp.level, foeDeck: opp.deck });
   s.declareDeck(me.deck);
   s.close();
   assert.deepEqual([...s.state!.decl![1]].sort(), [...opp.deck].sort());
 });
 
 test('daily puzzle: the same for everyone on a date, solvable by the bot, failed by ending the turn, retryable', () => {
-  for (const rules of [RAPTURE, STARTER]) {
+  for (const rules of [SAMPLE, STARTER]) {
     const P = createPuzzles(rules);
     const p = P.daily('2026-10-24')!;
     assert.ok(p, 'a puzzle exists');

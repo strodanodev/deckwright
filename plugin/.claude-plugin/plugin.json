@@ -1,13 +1,13 @@
 {
-  "name": "deckwright",
-  "version": "0.7.0",
+  "name": "tessaract",
+  "version": "0.8.0",
   "description": "Build a Web3 trading card game from scratch or from any NFT collection: one JSON game file, ERC-6699 champions, wallet decks, bot balance sims, a deployable web client, two-player relay, LitNode-ready rulesets.",
   "author": {
     "name": "strodanodev",
     "url": "https://github.com/strodanodev"
   },
-  "homepage": "https://github.com/strodanodev/deckwright",
-  "repository": "https://github.com/strodanodev/deckwright",
+  "homepage": "https://github.com/strodanodev/tessaract",
+  "repository": "https://github.com/strodanodev/tessaract",
   "license": "Apache-2.0",
   "keywords": [
     "tcg",
