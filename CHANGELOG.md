@@ -2,6 +2,21 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.5 (2026-10-25): polish from a second review
+
+No rules change: every ruleset replays exactly as before.
+
+- **Cards:**
+  - hand cards no longer cover each other's stats;
+  - keyword tags stack inside the unit;
+  - the shield bubble follows the token's shape and sits under the stat gems.
+- **Screens:**
+  - the result overlay is fully opaque;
+  - the versus screen names both champions;
+  - the title's featured champion has a scrim behind it.
+- **Wording:** your own replays call you "You", and attacks read "Your X attacked…".
+- **Phone:** the gems on hand cards are no longer clipped.
+
 ## 0.9.4 (2026-10-25): art for cards without a painting
 
 No rules change: every ruleset replays exactly as before.
