@@ -293,7 +293,7 @@ app.flows = {
     const conceded = s.winner !== 2 && decode(s.last ?? 0).op === Op.Concede;
     const name = (id) => (id === "you" ? "You" : id === "bot" ? "House bot" : String(id).slice(0, 10));
     const headline = puzzleState ? (puzzleState === "solved" ? "Solved" : "Not this time")
-      : s.winner === 2 ? "Draw" : watching ? `${name(s.p[s.winner].id)} wins` : s.winner === meIdx ? "Victory" : "Defeat";
+      : s.winner === 2 ? "Draw" : watching ? (name(s.p[s.winner].id) === "You" ? "You win" : `${name(s.p[s.winner].id)} wins`) : s.winner === meIdx ? "Victory" : "Defeat";
     const sub = puzzleState
       ? (puzzleState === "solved" ? `${session.actions} actions. The bot needed ${session.puzzle.par}.` : "Your turn ended without a win. Try another line.")
       : conceded ? (watching ? `${name(s.p[s.winner === 0 ? 1 : 0].id)} conceded` : s.winner === meIdx ? "Your opponent conceded" : "You conceded")

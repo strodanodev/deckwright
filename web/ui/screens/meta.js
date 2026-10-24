@@ -58,7 +58,7 @@ export function gauntletScreen(app) {
         panel.append(head(`Stage ${stage}: ${opp.name}`, `${LEVEL[opp.level]} bot`), h("div", { class: "panel-body stage-body" },
           h("div", { class: "stage-foe" }, foe ? app.cards.championCard(foe, { eager: true }) : h("div", { class: "ccard base" }, h("div", { class: "inner" }, icon("foe")))),
           h("div", { class: "stack" }, who,
-            h("p", { class: "lede", text: `${foe ? foe.name : "The base champion"} waits${opp.deck.length ? " with a stronger deck than the last" : ""}.` }),
+            h("p", { class: "lede", text: `${foe ? foe.name : "The base champion"} waits${opp.deck.length && stage > 1 ? " with a stronger deck than the last" : ""}.` }),
             h("button", { class: "btn primary lg block pulse", type: "button", on: { click: () => void app.flows.gauntletFight() } }, icon("swords"), "Fight"),
             h("button", { class: "link-btn", type: "button", on: { click: () => app.flows.gauntletAbandon() } }, icon("flag"), "Abandon run"))));
       }

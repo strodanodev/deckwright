@@ -135,6 +135,8 @@ export function matchScreen(app) {
   // ------------------------------------------------------------------ helpers
   const act = (x) => { pick = null; session?.act(x); };
   const shortId = (id) => (/^[0-9a-f]{64}$/i.test(id) ? `${id.slice(0, 6)}…${id.slice(-4)}` : id);
+  /** "You" in your own replays reads "Your turn", "You win": English needs its own forms for it. */
+  const possessive = (name) => (name === "You" ? "Your" : `${name}'s`);
   const playerName = (id) => (id === "you" ? "You" : id === "bot" ? "House bot" : shortId(String(id)));
   const champOf = (id) => app.byToken.get(String(session?.champions?.[id]?.tokenId)) ?? null;
   const cardName = (c) => game.cards[c]?.name ?? "a card";
@@ -169,12 +171,12 @@ export function matchScreen(app) {
     const actor = before.turn, P = before.p[actor], E = before.p[actor === 0 ? 1 : 0];
     const watching = viewing();
     const who = watching ? playerName(P.id) : actor === meIdx ? "You" : "Opponent";
-    const enemyChampion = watching ? `${playerName(E.id)}'s champion` : actor === meIdx ? "the enemy champion" : "your champion";
+    const enemyChampion = watching ? `${possessive(playerName(E.id))} champion` : actor === meIdx ? "the enemy champion" : "your champion";
     const tgt = () => (target === ENEMY_CHAMPION ? enemyChampion : target < 10 ? cardName(E.board[target - 1]?.c) : target === 10 ? "" : cardName(P.board[target - 11]?.c));
     let line = "";
     if (op === Op.Play) line = `${who} played ${cardName(P.hand[a])}${target ? ` → ${tgt()}` : ""}`;
     else if (op === Op.Power) line = `${who} used ${game.champion.powers?.[P.power]?.name ?? "a power"}${target ? ` → ${tgt()}` : ""}`;
-    else if (op === Op.Attack) line = `${who === "You" ? "Your" : `${who}'s`} ${cardName(P.board[a]?.c)} attacked ${tgt()}`;
+    else if (op === Op.Attack) line = `${possessive(who)} ${cardName(P.board[a]?.c)} attacked ${tgt()}`;
     else if (op === Op.End) line = `${who} ended the turn`;
     else if (op === Op.Concede) line = watching ? `${playerName(s.p[s.winner === 0 ? 1 : 0].id)} conceded` : `${s.winner === meIdx ? "Opponent" : "You"} conceded`;
     if (line) recent = [...recent, line].slice(-2);
@@ -339,7 +341,7 @@ export function matchScreen(app) {
 
     endBtn.disabled = !myTurn;
     endBtn.classList.toggle("ready", myTurn && !moves.some((m) => m.op !== Op.End));
-    const watchingTurn = watching ? `${playerName(s.p[s.turn].id)}'s turn` : null;
+    const watchingTurn = watching ? `${possessive(playerName(s.p[s.turn].id))} turn` : null;
     const outcome = s.winner === 2 ? "A draw" : s.winner >= 0 ? `${watching ? playerName(s.p[s.winner].id) : s.winner === meIdx ? "You" : "Opponent"} won` : "";
     medallion.querySelector(".md-text").textContent = s.over ? outcome : watchingTurn ?? (myTurn ? `Your turn · ${s.turnNo}` : `Enemy turn · ${s.turnNo}`);
     medallion.classList.toggle("yours", myTurn);
@@ -363,7 +365,7 @@ export function matchScreen(app) {
       const won = puzzleState ? puzzleState === "solved" : s.winner === meIdx;
       const outcomeKind = puzzleState ? (won ? "win" : "loss") : s.winner === 2 ? "draw" : watching ? "win" : won ? "win" : "loss";
       flash(outcomeKind === "win" ? "victory" : outcomeKind === "loss" ? "defeat" : "victory");
-      banner(puzzleState ? (won ? "Solved" : "Not this time") : s.winner === 2 ? "Draw" : watching ? `${playerName(s.p[s.winner].id)} wins` : won ? "Victory" : "Defeat", "", outcomeKind === "loss" ? "red" : "");
+      banner(puzzleState ? (won ? "Solved" : "Not this time") : s.winner === 2 ? "Draw" : watching ? (playerName(s.p[s.winner].id) === "You" ? "You win" : `${playerName(s.p[s.winner].id)} wins`) : won ? "Victory" : "Defeat", "", outcomeKind === "loss" ? "red" : "");
       setTimeout(() => app.flows.finished({ session, state: s, meIdx, puzzleState, tally: { ...tally }, outcome: outcomeKind, watching, champion: myChamp }), 1400);
     } else if (s.over && !replaying() && ctx.kind === "relay" && !watching && result.open) {
       result.setDetail(`${s.turnNo} turns · ${me.life} life left · ${session.status}`);   // settlement status updates
