@@ -73,8 +73,10 @@ export function createArena(root) {
     brazier(1), brazier(2),
     sparks,
     layer("ar-shade"), layer("ar-vignette"));
+  let three = null;   // the 3D arena once it runs (see upgrade)
   const api = {
     realm: "valhalla",
+    mood: "menu",
     setRealm(id) {
       if (!REALMS[id] || id === api.realm) return;
       api.realm = id;
@@ -82,11 +84,52 @@ export function createArena(root) {
       const next = embers(22, REALMS[id].embers);
       sparks.replaceWith(next);
       sparks = next;
+      void three?.setRealm(id);
     },
     /** "menu" shows the level in full; "battle" dims it behind the board. */
-    setMood(mood) { root.dataset.mood = mood; },
-    quake() { root.classList.remove("quake"); void root.offsetWidth; root.classList.add("quake"); },
+    setMood(mood) { api.mood = mood; root.dataset.mood = mood; three?.setMood(mood); },
+    quake() { root.classList.remove("quake"); void root.offsetWidth; root.classList.add("quake"); three?.quake(); },
+    /** Frame rate, resolution and draw calls of the 3D arena, or null while the CSS arena is showing. */
+    stats: () => three?.stats() ?? null,
+    upgrade: () => upgrade(),
   };
+
+  /**
+   * Swap the CSS level for Rapture Chess's real one: the Blender-built arenas rendered live with three.js
+   * (web/arena3d.js, built from src/arena3d). Only after the title screen is up, and only where it can run well:
+   * WebGL2, no data-saver, and the arena models present (a scaffolded game ships none; drop GLBs into
+   * assets/arena/ to add your own). Anything that fails, or a device that can't hold the frame rate, keeps the CSS arena.
+   */
+  async function upgrade() {
+    if (three || root.classList.contains("three-failed")) return false;
+    const base = "./assets/arena/";
+    try {
+      if (navigator.connection?.saveData) throw new Error("data saver is on");
+      // failIfMajorPerformanceCaveat: a software renderer refuses at once, before it spends a second initialising
+      const gl = document.createElement("canvas").getContext("webgl2", { failIfMajorPerformanceCaveat: true });
+      if (!gl) throw new Error("no hardware WebGL2");
+      // A software renderer (no GPU, or a blocklisted one) compiles shaders on the CPU: seconds of frozen menu. Skip it.
+      const info = gl.getExtension("WEBGL_debug_renderer_info");
+      const gpu = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      if (/swiftshader|llvmpipe|software|basic render/i.test(gpu)) throw new Error(`software rendering (${gpu})`);
+      const head = await fetch(`${base}${api.realm}.glb`, { method: "HEAD" });
+      if (!head.ok) throw new Error(`no arena model (${head.status})`);
+      const { mountArena3D } = await import("../arena3d.js");
+      const canvas = h("canvas", { class: "ar-3d", aria: { hidden: "true" } });
+      root.prepend(canvas);
+      const fail = () => { three?.dispose(); three = null; canvas.remove(); root.classList.remove("three"); root.classList.add("three-failed"); };
+      three = await mountArena3D(canvas, { base, realm: api.realm, mood: api.mood, still: matchMedia("(prefers-reduced-motion: reduce)").matches, onTooSlow: () => { console.info("[arena] the 3D arena can't keep up here: using the CSS arena"); fail(); } })
+        .catch((e) => { canvas.remove(); throw e; });
+      root.classList.add("three");
+      return true;
+    } catch (e) {
+      console.info(`[arena] CSS arena: ${e.message}`);
+      root.dataset.fallback = e.message;   // why, for DevTools and scripts/profile-web.mjs
+      root.classList.add("three-failed");
+      return false;
+    }
+  }
   root.dataset.realm = "valhalla";
   root.dataset.mood = "menu";
   return api;

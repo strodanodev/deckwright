@@ -10,7 +10,7 @@
       "name": "deckwright",
       "source": "./plugin",
       "description": "Build, balance, ship and host an NFT trading card game with Deckwright.",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "category": "development",
       "tags": [
         "tcg",

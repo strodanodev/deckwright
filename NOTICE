@@ -7,6 +7,7 @@ the Apache License, Version 2.0 (see LICENSE).
 NOT covered by that license — the Rapture demo content:
 
   - web/assets/art/            (Rapture character paintings)
+  - web/assets/arena/          (the Valhalla and Underworld arena models from Rapture Chess)
   - web/data/collection.json   (the Rapture ARC 1 collection snapshot: names, epithets, traits, art references)
   - web/data/game.json and games/rapture-duel.game.json, as far as they reproduce Rapture names and traits
 

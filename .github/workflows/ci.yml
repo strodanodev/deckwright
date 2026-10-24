@@ -29,6 +29,10 @@ jobs:
       - name: Tests
         run: pnpm test
 
+      - name: Committed 3D arena bundle matches the source
+        # web/arena3d.js is generated from src/arena3d with three.js (a dev dependency builders never install).
+        run: node scripts/build-arena3d.mjs && git diff --exit-code web/arena3d.js
+
       - name: Committed site engine matches the source
         # web/engine is generated; a rules change without `pnpm web` would ship stale rules to the demo.
         run: |

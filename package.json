@@ -1,6 +1,6 @@
 {
   "name": "deckwright",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Deckwright: a lightweight Web3 trading card game maker. One JSON file is a game; ERC-6699 agents are champions; matches replay deterministically and are ready for LitNode settlement.",
   "license": "Apache-2.0",
@@ -23,6 +23,7 @@
     "templates",
     "web/index.html",
     "web/app.js",
+    "web/arena3d.js",
     "web/ui",
     "web/styles",
     "web/favicon.svg",
@@ -50,13 +51,16 @@
     "build": "node scripts/build-cli.mjs",
     "prepare": "node scripts/build-cli.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test \"test/*.test.*\""
+    "test": "tsx --test \"test/*.test.*\"",
+    "arena3d": "node scripts/build-arena3d.mjs"
   },
   "dependencies": {
     "esbuild": "0.28.1"
   },
   "devDependencies": {
     "@types/node": "25.9.3",
+    "@types/three": "0.186.0",
+    "three": "0.186.1",
     "tsx": "4.23.7",
     "typescript": "6.0.3"
   }

@@ -15,4 +15,6 @@ Checks before committing:
 - If you change Gauntlet tuning, re-check the stage-by-stage win rates with a normal-bot player before shipping.
 - Rapture Duel is rebuilt with `node scripts/build-rapture-duel.mjs <rapture cards.json>`: the design-kit import plus the demo's own settings (title, element colours, rules, deck rules, champion life 20–26).
 - Add the release to `CHANGELOG.md`.
+- After any change to `src/arena3d`, run `pnpm arena3d`; CI fails when `web/arena3d.js` is stale.
+- Measure web changes with `node scripts/profile-web.mjs <url> --runs 5` (software WebGL: the CSS fallback path) and `--gpu` (the 3D arena). Keep long tasks after the title near zero on the fallback path.
 - Bump `version` in both `package.json` and `plugin/.claude-plugin/plugin.json` (and the marketplace entry) when releasing.

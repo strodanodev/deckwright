@@ -336,3 +336,10 @@ if (!opened) {
     void versusInto(session, { kind: "watch", label: "Spectating" }, { names: ["Player one", "Player two"], subs: ["Spectating", "Live"], champs: [null, null], realm: "valhalla" }, () => !!session.state);
   } else void go("home").then(() => performance.mark("deckwright:title"));   // time to the title screen, for profiling
 }
+// Rapture Chess's real 3D arena loads after the first screen is up, so it never delays it (the CSS arena stays as the
+// fallback). Its frame rate and draw calls are on window.deckwright.arenaStats(), for profiling.
+// Measured (scripts/profile-web.mjs --gpu --detail): about 0.3-0.45 s of main-thread work, once, so it waits for an
+// idle moment rather than landing on the player's first click.
+const upgradeArena = () => { void arena.upgrade().then((ok) => { if (ok) performance.mark("deckwright:arena3d"); }); };
+setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(upgradeArena, { timeout: 2000 }) : upgradeArena()), 400);
+window.deckwright = { arenaStats: () => arena.stats() };
