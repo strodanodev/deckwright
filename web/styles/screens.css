@@ -254,13 +254,16 @@
 /* ------------------------------------------------------------------ build your own */
 .funnel-wrap { display: grid; gap: 22px; max-width: 980px; margin: 0 auto; width: 100%; }
 .funnel-lede { max-width: 720px; font-size: 16px; }
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 16px; }
+.step { min-width: 0; }
 .step { display: grid; gap: 10px; align-content: start; padding: 20px; }
 .step-n { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: #241604; background: radial-gradient(circle at 50% 30%, #ffe7a8, #c98a28 75%); font-size: 16px; }
 .step h3 { margin: 0; font-size: 16px; letter-spacing: 0.12em; }
 .cmd { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--line); border-radius: 3px; background: rgba(0, 0, 0, 0.5); }
 .cmd code { flex: 1; min-width: 0; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--gold-1); overflow-x: auto; white-space: nowrap; user-select: text; -webkit-user-select: text; }
-.funnel-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.funnel-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.funnel-links .btn { height: 56px; min-width: 240px; flex: none; }
+.hint, .lede { overflow-wrap: anywhere; }
 .fine { font-size: 12px; }
 
 /* ------------------------------------------------------------------ versus */
