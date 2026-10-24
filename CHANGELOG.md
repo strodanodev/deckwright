@@ -2,6 +2,19 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.1 (2026-10-25): the visual review
+
+No rules change: every ruleset replays exactly as before.
+
+- **Client, from an independent visual review:**
+  - the battle board: slot plates, bigger units, hero frames, hand sizing, and the replay bar no longer clips the hand;
+  - the rarity gem moves off card names, and cards without art get glowing element art;
+  - the phone layout: the versus screen, champion select and the HUD dock;
+  - the result screen lays out its primary button, secondary row and links; it no longer repeats the turn count;
+  - centred short screens, stat grids, the deck panel's call to action, and the "Build your own" page no longer overflows.
+- `?arena=css` keeps the CSS arena (for comparisons, or for players who prefer it).
+- `scripts/profile-web.mjs --isolate` profiles each load in a fresh browser profile.
+
 ## 0.9.0 (2026-10-24): Deckwright is now Tessaract
 
 No rules change: every ruleset replays exactly as before.
