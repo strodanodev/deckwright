@@ -119,7 +119,8 @@ export class Realm {
       fires.push(m);
       return m;
     }
-    if (/rune/.test(n)) { const m = src.clone(); m.emissiveIntensity = 2.2; m.color.set(0x05050a); return m; }
+    // runes glow, but under the bloom threshold's knee: brighter reads as a white band from the battle camera
+    if (/rune/.test(n)) { const m = src.clone(); m.emissiveIntensity = 1.2; m.color.set(0x05050a); return m; }
     if (src.map) {
       // Poly Haven stone, ground and rock: keep the colour and normal maps, darken them to the realm's mood, matte
       const m = src.clone();
@@ -128,14 +129,15 @@ export class Realm {
       m.metalness = 0; m.roughness = 0.9; m.envMapIntensity = 0.25;
       return m;
     }
-    if (/crystal/.test(n)) { const m = src.clone(); m.emissiveIntensity = 2.6; return m; }
-    if (/banner/.test(n)) return new THREE.MeshStandardMaterial({ color: 0x14284a, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
-    if (/gold/.test(n)) return new THREE.MeshStandardMaterial({ color: 0xffbf5e, roughness: 0.3, metalness: 1, envMapIntensity: 1.2 });
-    if (/obsidian/.test(n)) return new THREE.MeshPhysicalMaterial({ color: 0x0a070c, roughness: 0.2, metalness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.25, envMapIntensity: 1.0 });
-    if (/bone/.test(n)) return new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 0.75, metalness: 0 });
-    if (/basalt/.test(n)) return new THREE.MeshStandardMaterial({ color: 0x15111a, roughness: 0.9, metalness: 0.08 });
-    if (/dark/.test(n)) return new THREE.MeshStandardMaterial({ color: 0x1a1613, roughness: 0.7, metalness: 0.15 });
-    return new THREE.MeshStandardMaterial({ color: id === 'valhalla' ? 0x4a443c : 0x2a2226, roughness: 0.92, metalness: 0.05, envMapIntensity: 0.35 });
+    if (/crystal/.test(n)) { const m = src.clone(); m.emissiveIntensity = 3.2; return m; }
+    // the untextured surfaces get weathering (see weather()), or they read as flat greybox next to the photo stone
+    if (/banner/.test(n)) return weather(new THREE.MeshStandardMaterial({ color: 0x14284a, roughness: 0.85, metalness: 0, side: THREE.DoubleSide }), 5, 0.35, 0.2);
+    if (/gold/.test(n)) return weather(new THREE.MeshStandardMaterial({ color: 0xffbf5e, roughness: 0.32, metalness: 1, envMapIntensity: 1.2 }), 3, 0.3, 0.35);
+    if (/obsidian/.test(n)) return weather(new THREE.MeshPhysicalMaterial({ color: 0x0c080e, roughness: 0.28, metalness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.3, envMapIntensity: 1.0 }), 1.4, 0.55, 0.3);
+    if (/bone/.test(n)) return weather(new THREE.MeshStandardMaterial({ color: 0x80735c, roughness: 0.82, metalness: 0 }), 2.2, 0.55, 0.55);
+    if (/basalt/.test(n)) return weather(new THREE.MeshStandardMaterial({ color: 0x15111a, roughness: 0.9, metalness: 0.08 }), 1.6, 0.5, 0.3);
+    if (/dark/.test(n)) return weather(new THREE.MeshStandardMaterial({ color: 0x1a1613, roughness: 0.7, metalness: 0.15 }), 2, 0.45, 0.3);
+    return weather(new THREE.MeshStandardMaterial({ color: id === 'valhalla' ? 0x4a443c : 0x2a2226, roughness: 0.92, metalness: 0.05, envMapIntensity: 0.35 }), 1.8, 0.5, 0.45);
   }
 
   private update(_dt: number, t: number): void {
@@ -143,6 +145,38 @@ export class Realm {
     for (const m of this.animated) { m.uniforms.time.value = t; (m.uniforms.fogColor.value as THREE.Color).copy(fog.color); m.uniforms.fogDensity.value = fog.density; }
     for (let i = 0; i < this.fires.length; i++) this.fires[i].emissiveIntensity = 3.0 + 0.8 * Math.sin(t * 7 + i * 1.7) * Math.sin(t * 3.1 + i);
   }
+}
+
+/**
+ * Weathering for the untextured Blender materials (bone, obsidian, gold, painted stone): world-space value noise varies
+ * the colour and roughness, and grime gathers toward the ground. It needs no textures or UVs and costs a few ALU ops a
+ * pixel, standing in for the ambient occlusion and texture detail of Rapture Chess's heavier stage.
+ *   scale: noise frequency per metre · amount: colour variation (0-1) · grime: darkening at floor level (0-1)
+ */
+function weather<T extends THREE.MeshStandardMaterial>(m: T, scale: number, amount: number, grime: number): T {
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.wScale = { value: scale };
+    sh.uniforms.wAmount = { value: amount };
+    sh.uniforms.wGrime = { value: grime };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform float wScale, wAmount, wGrime; varying vec3 vWP;
+float wHash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float wNoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(wHash(i), wHash(i + vec3(1, 0, 0)), f.x), mix(wHash(i + vec3(0, 1, 0)), wHash(i + vec3(1, 1, 0)), f.x), f.y),
+             mix(mix(wHash(i + vec3(0, 0, 1)), wHash(i + vec3(1, 0, 1)), f.x), mix(wHash(i + vec3(0, 1, 1)), wHash(i + vec3(1, 1, 1)), f.x), f.y), f.z); }
+float wFbm(vec3 p){ return 0.5 * wNoise(p) + 0.3 * wNoise(p * 2.3 + 7.1) + 0.2 * wNoise(p * 5.7 + 3.3); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+float wN = wFbm(vWP * wScale);
+diffuseColor.rgb *= mix(1.0 - wAmount, 1.0 + wAmount * 0.35, wN);
+diffuseColor.rgb *= mix(1.0 - wGrime, 1.0, smoothstep(-0.2, 1.6, vWP.y + (wN - 0.5) * 0.8));`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (wN - 0.5) * 0.35, 0.04, 1.0);');
+  };
+  m.customProgramCacheKey = () => `weather:${scale}:${amount}:${grime}`;
+  return m;
 }
 
 /** Flowing lava: two layers of scrolling noise, hot cracks over a dark crust, emissive enough to bloom. */
