@@ -2,6 +2,14 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.3 (2026-10-25): a weathered arena
+
+No rules change: every ruleset replays exactly as before.
+
+- **The 3D arena stops looking like greybox.** Its untextured surfaces (bone, obsidian, gold, banners, stone) get procedural weathering (`weather()` in `src/arena3d/realm.ts`): world-space noise varies colour and roughness, and grime darkens toward the floor. It needs no textures or UVs.
+- **Tuning:** bone is darker, the runes no longer read as a white band from the battle camera, and the crystals glow a little more.
+- **Cost:** about 0.5 ms a frame on a GPU, with the same 25 draws and no main-thread blocking.
+
 ## 0.9.2 (2026-10-25): the re-review
 
 No rules change: every ruleset replays exactly as before.
