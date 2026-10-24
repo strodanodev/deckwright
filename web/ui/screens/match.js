@@ -71,7 +71,8 @@ export function matchScreen(app) {
       vbtn("link", "Copy link", () => void app.flows.copyViewLink(session)),
       vbtn("close", "Exit", () => void app.flows.exitView())));
 
-  const board = h("div", { class: "battlefield" }, foeLane, h("div", { class: "lane-line" }), myLane);
+  const mat = h("div", { class: "table-mat", aria: { hidden: "true" } }, h("i", { class: "tm-ring" }), h("i", { class: "tm-seat foe" }), h("i", { class: "tm-seat you" }));
+  const board = h("div", { class: "battlefield" }, mat, foeLane, h("div", { class: "lane-line" }), myLane);
   const el = h("section", { class: "match", aria: { label: "Battle" } },
     fx, foeP.el, h("div", { class: "hud-center" }, medallion, status), board, meP.el, hand, dock, feed, cine, viewbar, result.el);
 
@@ -297,6 +298,10 @@ export function matchScreen(app) {
     renderPlate(meP, me, myChamp, watching ? playerName(me.id) : "You", { mine: true, moves, targets, foe: false });
     foeP.el.classList.toggle("active", !s.over && s.turn !== meIdx);
     meP.el.classList.toggle("active", !s.over && s.turn === meIdx);
+    const low = (p) => !s.over && p.life <= Math.max(5, Math.round(p.maxLife * 0.25));
+    foeP.el.classList.toggle("low", low(foe));
+    meP.el.classList.toggle("low", low(me));
+    el.classList.toggle("danger", !watching && low(me));
 
     foeLane.replaceChildren(...foe.board.map((u, slot) => {
       const b = inspectable(app.cards.unitToken(game.cards[u.c], u), game.cards[u.c]);
