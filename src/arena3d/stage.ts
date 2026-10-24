@@ -1,8 +1,10 @@
 /**
  * The 3D stage behind the game client, ported from Rapture Chess (src/scene/stage.ts): the renderer, the sky dome with
  * its aurora and stars, fog, the key, rim, hemisphere and accent lights, a studio environment for reflections, bloom
- * on what is really hot, and AgX tone mapping. Lighter than the chess stage on purpose: no ambient occlusion, mirror
- * floor or shadow pass, because the cards are the bright thing on screen here, not the set.
+ * on what is really hot, and AgX tone mapping. Lighter than the chess stage on purpose: no ambient occlusion or mirror
+ * floor, because the cards are the bright thing on screen here, not the set. Shadows are static: the key light and the
+ * set never move, so the shadow map renders once per realm and is reused (not on phones). Drifting motes (dust in
+ * Valhalla, embers in the Underworld) are animated wholly on the GPU.
  *
  * It runs in a Web Worker on an OffscreenCanvas (worker.ts), so it never touches the DOM: the page sends the size,
  * pixel ratio, pointer type and visibility in.
@@ -37,6 +39,8 @@ export class Stage {
   private readonly composer: EffectComposer;
   private readonly bloom: UnrealBloomPass;
   private readonly sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  private readonly motes: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+  private readonly shadows: boolean;
   private readonly stars: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
   private readonly timer = new THREE.Timer();
   private readonly updaters: Array<(dt: number, t: number) => void> = [];
@@ -70,6 +74,19 @@ export class Stage {
     this.renderer.info.autoReset = false;
     // phones start one step down: a weak GPU shouldn't have to prove itself slow first
     this.ratioStep = opts.coarse ? 1 : 0;
+    // one static shadow map: rendered when a realm loads (refreshShadows), never per frame
+    this.shadows = !opts.coarse;
+    if (this.shadows) {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.shadowMap.autoUpdate = false;
+      this.keyLight.castShadow = true;
+      this.keyLight.shadow.mapSize.set(2048, 2048);
+      const c = this.keyLight.shadow.camera;
+      c.left = -18; c.right = 18; c.top = 18; c.bottom = -18; c.near = 1; c.far = 60;
+      this.keyLight.shadow.bias = -0.0004;
+      this.keyLight.shadow.normalBias = 0.03;
+    }
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -88,11 +105,13 @@ export class Stage {
     this.floorPlate = new THREE.Mesh(new THREE.CircleGeometry(9.05, 64), new THREE.MeshStandardMaterial({ color: 0x0b0b10, roughness: 0.62, metalness: 0.35, envMapIntensity: 0.18 }));
     this.floorPlate.rotation.x = -Math.PI / 2;
     this.floorPlate.position.y = -0.165;
+    this.floorPlate.receiveShadow = true;
     this.scene.add(this.floorPlate);
 
     this.sky = this.skyDome();
     this.stars = this.starfield();
-    this.scene.add(this.sky, this.stars);
+    this.motes = this.moteField(opts.coarse ? 260 : 640);
+    this.scene.add(this.sky, this.stars, this.motes);
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
@@ -151,6 +170,45 @@ export class Stage {
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     return new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, opacity: 0.8, fog: false }));
   }
+
+  /** Motes drifting up through the arena: positions loop in the vertex shader, so a frame costs one draw call. */
+  private moteField(n: number): THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial> {
+    const pos = new Float32Array(n * 3), seed = new Float32Array(n);
+    let s = 11;
+    const rnd = (): number => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * Math.PI * 2, r = 2.5 + Math.sqrt(rnd()) * 11;
+      pos.set([Math.cos(a) * r, rnd() * 9, Math.sin(a) * r], i * 3);
+      seed[i] = rnd();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    return new THREE.Points(geo, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+      uniforms: { time: { value: 0 }, rise: { value: 0.2 }, size: { value: 1 }, color: { value: new THREE.Color(0xffffff) }, opacity: { value: 0.6 } },
+      vertexShader: `uniform float time, rise, size; attribute float aSeed; varying float vA;
+        void main(){ vec3 p = position; float h = 9.0;
+          p.y = mod(p.y + time * rise * (0.6 + aSeed * 0.8), h);
+          p.x += sin(time * 0.4 + aSeed * 20.0) * 0.45; p.z += cos(time * 0.33 + aSeed * 17.0) * 0.45;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv;
+          gl_PointSize = min(size * (0.5 + aSeed) * (180.0 / -mv.z), 9.0 * size);   // near motes stay specks, not blobs
+          vA = smoothstep(0.0, 1.2, p.y) * (1.0 - smoothstep(h - 3.0, h - 0.3, p.y)) * (0.55 + 0.45 * sin(time * 2.3 + aSeed * 31.0)); }`,
+      fragmentShader: `uniform vec3 color; uniform float opacity; varying float vA;
+        void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.05, d);
+          gl_FragColor = vec4(color * (1.0 + a * 1.5), a * vA * opacity); }`,
+    }));
+  }
+
+  /** The realm's motes: their colour, how fast they rise, their size and strength (0 hides them). */
+  setMotes(color: number, rise: number, size: number, opacity: number): void {
+    const u = this.motes.material.uniforms;
+    (u.color.value as THREE.Color).set(color); u.rise.value = rise; u.size.value = size; u.opacity.value = opacity;
+    this.motes.visible = opacity > 0;
+  }
+
+  /** Re-render the static shadow map on the next frame (after a realm or its lighting changes). */
+  refreshShadows(): void { if (this.shadows) this.renderer.shadowMap.needsUpdate = true; }
 
   setSky(c: SkyColors, aurora: number, stars: number): void {
     const u = this.sky.material.uniforms;
@@ -241,6 +299,7 @@ export class Stage {
       const t0 = performance.now();
       this.renderer.info.reset();
       this.sky.material.uniforms.time.value = t;
+      this.motes.material.uniforms.time.value = t;
       for (const fn of this.updaters) fn(dt, t);
       this.place(dt, t);
       this.composer.render(dt);

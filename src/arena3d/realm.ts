@@ -21,6 +21,7 @@ interface Preset {
   hemi: { sky: number; ground: number; intensity: number };
   envIntensity: number;
   floorRadius: number;
+  motes: { color: number; rise: number; size: number; opacity: number };
 }
 
 const PRESETS: Record<RealmId, Preset> = {
@@ -31,6 +32,7 @@ const PRESETS: Record<RealmId, Preset> = {
     rim: { color: 0x9fd0ff, intensity: 55 },
     hemi: { sky: 0x4a5a8a, ground: 0x1a1410, intensity: 0.6 },
     envIntensity: 0.6, floorRadius: 9.05,
+    motes: { color: 0xcfe0ff, rise: 0.12, size: 1, opacity: 0.5 },
   },
   underworld: {
     sky: { top: 0x050102, bottom: 0x2a0806, glow: 0x7a1a08, fog: 0x120404, fogDensity: 0.024 },
@@ -39,6 +41,7 @@ const PRESETS: Record<RealmId, Preset> = {
     rim: { color: 0xff5a2a, intensity: 70 },
     hemi: { sky: 0x4a1a10, ground: 0x200404, intensity: 0.7 },
     envIntensity: 0.5, floorRadius: 0,
+    motes: { color: 0xff7a2a, rise: 0.55, size: 1.2, opacity: 0.9 },
   },
 };
 
@@ -72,6 +75,7 @@ export class Realm {
     s.hemi.color.set(p.hemi.sky); s.hemi.groundColor.set(p.hemi.ground); s.hemi.intensity = p.hemi.intensity;
     s.scene.environmentIntensity = p.envIntensity;
     s.setFloorRadius(p.floorRadius);
+    s.setMotes(p.motes.color, p.motes.rise, p.motes.size, p.motes.opacity);
     let model = this.cache.get(id);
     if (!model) {
       model = this.loader.loadAsync(`${this.base}${id}.glb`).then(async (g) => {
@@ -89,6 +93,7 @@ export class Realm {
     this.animated = scene.userData.animated ?? [];
     this.fires = scene.userData.fires ?? [];
     this.group.add(scene);
+    this.stage.refreshShadows();
     return true;
   }
 
@@ -98,8 +103,11 @@ export class Realm {
     const animated: THREE.ShaderMaterial[] = [], fires: THREE.MeshStandardMaterial[] = [];
     root.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
-      o.castShadow = false;
-      o.receiveShadow = false;
+      // the set grounds itself in the static shadow map. Each GLB mesh is one material across the whole arena, so
+      // casting is chosen by material: the overhead beams and banners and the crater wall would shade the whole dais,
+      // and lava is its own light
+      o.castShadow = !/lava|dark|banner|basalt|floor|ash|fire|ember/.test((o.material as THREE.Material).name);
+      o.receiveShadow = true;
       const src = o.material as THREE.MeshStandardMaterial;
       let m = mats.get(src.name);
       if (!m) { m = this.material(src, id, animated, fires); mats.set(src.name, m); }
