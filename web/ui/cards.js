@@ -2,6 +2,7 @@
 // collection token: Rapture Chess's framed card with its foil). Colours: rarity frames the card, the element tints it.
 import { describeCard, KEYWORDS } from "../engine/tessaract.js";
 import { h, icon } from "./dom.js";
+import { sigil } from "./sigil.js";
 
 const KIND_RARITY = { God: "legendary", Titan: "epic", King: "rare", Demigod: "uncommon", Mortal: "common" };
 const RARITY_NAME = { legendary: "Legendary", epic: "Epic", rare: "Rare", uncommon: "Uncommon", common: "Common" };
@@ -38,7 +39,7 @@ export function createCards(app) {
   const typeLine = (def) => [def.type === "unit" ? def.kind ?? "Unit" : def.type === "spell" ? "Spell" : "Relic", def.element && def.element !== "neutral" ? elementName(def.element) : null].filter(Boolean).join(" · ");
   const artBox = (def, cls) => {
     const art = app.artOf(def);
-    return h("div", { class: cls }, art ? h("img", { src: art, alt: "", loading: "lazy", decoding: "async", draggable: false }) : icon(def.type === "spell" ? "spark" : def.type === "relic" ? "gem" : "sword", "glyph"));
+    return h("div", { class: cls }, art ? h("img", { src: art, alt: "", loading: "lazy", decoding: "async", draggable: false }) : sigil(def));
   };
 
   /** A full card. `tag` "button" makes it clickable; `small` is the relic size. */
