@@ -2,7 +2,7 @@
  * Scaffold a new game project: a starter game, the web client, the Vercel config and the Deckwright
  * skill (so an AI agent in the project knows the workflow), then build the site so it plays at once.
  *
- *   npx github:strodanodev/deckwright create my-tcg [--title "My TCG"] [--sdk <dependency spec>]
+ *   npx github:strodanodev/tessaract create my-tcg [--title "My TCG"] [--sdk <dependency spec>]
  *
  * --sdk is what the new project's package.json depends on. The default is the GitHub repo, until the
  * package is on npm (then it becomes `^<version>`). Use a `file:` path to test a local build.
@@ -19,7 +19,7 @@ const target = resolve(args._[0] ?? die('usage: deckwright create <dir> [--title
 if (existsSync(target) && readdirSync(target).length) die(`${target} exists and is not empty`);
 const id = basename(target).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'my-tcg';
 const title = flag(args, 'title') ?? id.split('-').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
-const sdk = flag(args, 'sdk') ?? 'github:strodanodev/deckwright';
+const sdk = flag(args, 'sdk') ?? 'github:strodanodev/tessaract';
 
 mkdirSync(join(target, 'games'), { recursive: true });
 const template = JSON.parse(readFileSync(pkgPath('templates', 'starter.game.json'), 'utf8')) as GameConfig;

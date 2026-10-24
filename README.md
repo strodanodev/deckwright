@@ -8,23 +8,23 @@ A lightweight Web3 trading card game maker.
 
 The demo game is **Rapture Duel**, built from the 50 Rapture ARC 1 cards on LitVM Liteforge (chain 4441). Play it at https://deckwright-phi.vercel.app.
 
-Repo: https://github.com/strodanodev/deckwright
+Repo: https://github.com/strodanodev/tessaract
 
 ## Use it with Claude Code (one-shot game building)
 
 Install the plugin, then ask for a game, for example "make me a pirate trading card game". The `deckwright` skill creates the project, designs and balances the card set, builds the site and plays a turn to check it.
 
 ```text
-/plugin marketplace add strodanodev/deckwright
+/plugin marketplace add strodanodev/tessaract
 /plugin install deckwright@deckwright
 ```
 
-From a shell: `claude plugin marketplace add strodanodev/deckwright`, then `claude plugin install deckwright@deckwright`. Run the skill directly with `/deckwright:deckwright`.
+From a shell: `claude plugin marketplace add strodanodev/tessaract`, then `claude plugin install deckwright@deckwright`. Run the skill directly with `/deckwright:deckwright`.
 
 ## Start a game (builders)
 
 ```bash
-npx github:strodanodev/deckwright create my-tcg   # scaffolds a project and builds its site
+npx github:strodanodev/tessaract create my-tcg   # scaffolds a project and builds its site
 cd my-tcg && npm install
 npm run dev                        # http://127.0.0.1:4173 — play it against the bot
 ```
@@ -32,10 +32,10 @@ npm run dev                        # http://127.0.0.1:4173 — play it against t
 Until the package is on npm, run it straight from GitHub:
 
 ```bash
-npx github:strodanodev/deckwright create my-tcg
+npx github:strodanodev/tessaract create my-tcg
 ```
 
-The new project then depends on `github:strodanodev/deckwright`. For a local copy, use `npx --package <path to deckwright-x.y.z.tgz> deckwright create my-tcg --sdk file:<path>`.
+The new project then depends on `github:strodanodev/tessaract`. For a local copy, use `npx --package <path to deckwright-x.y.z.tgz> deckwright create my-tcg --sdk file:<path>`.
 
 The new project contains:
 - **`games/<id>.game.json`:** the game.

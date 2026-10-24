@@ -62,7 +62,7 @@ export function homeScreen(app) {
     h("header", { class: "home-top" }, h("span", { class: "badge outline live", text: app.relay ? (app.watch ? "Spectating" : "Two-player match") : `Season 0 · ${app.snap.collection.name || "Practice"}` }), walletChip(app)),
     h("div", { class: "home-main" }, logo, menu),
     feature,
-    h("footer", { class: "home-foot" }, app.funnel ? h("span", { text: "Built with Deckwright · settled on LitNode" }) : h("span", null, "Made with ", h("a", { href: "https://github.com/strodanodev/deckwright", rel: "noopener", text: "Deckwright" }))));
+    h("footer", { class: "home-foot" }, app.funnel ? h("span", { text: "Built with Deckwright · settled on LitNode" }) : h("span", null, "Made with ", h("a", { href: "https://github.com/strodanodev/tessaract", rel: "noopener", text: "Deckwright" }))));
 
   app.onWallet(() => { for (const i of items) i.refresh(); });
   return {

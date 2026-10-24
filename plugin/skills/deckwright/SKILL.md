@@ -28,7 +28,7 @@ Ask the user only if something is genuinely blocking. Otherwise choose sensible 
 ## 1. Create the project
 
 ```bash
-npx github:strodanodev/deckwright create <game-id> --title "<Game Title>"
+npx github:strodanodev/tessaract create <game-id> --title "<Game Title>"
 cd <game-id>
 npm install
 ```
@@ -181,14 +181,14 @@ Don't break these when extending Deckwright itself.
 | Symptom | Fix |
 |---|---|
 | `invalid game config: …` | Read the listed problems; each names the field. Limits are in game-config.md |
-| `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/deckwright` and then `npx deckwright` |
+| `npx github:…` hangs or fails | Needs git and network. Retry, or use `npm i -D github:strodanodev/tessaract` and then `npx deckwright` |
 | Site blank, console CSP error | Something was inlined or loaded from another origin. Move it into `web/ui/` or `web/styles/` |
 | `snapshot` slow or `429` | The public RPC throttles; the tool waits and retries. Explorer-backed chains are faster |
 | Art missing after `web` | Remote art is dropped by design: re-run `snapshot` (it downloads), or use local `art` paths |
 
 ## Extending Deckwright (in its own repo)
 
-The source is at https://github.com/strodanodev/deckwright: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
+The source is at https://github.com/strodanodev/tessaract: `src/core` (rules), `src/client` (sessions), `src/tools` (CLI). To add an effect op:
 1. Add it to the `Effect` union in `src/core/types.ts`.
 2. Add one entry to `OPS` in `src/core/effects.ts`: field checks, allowed targets, default target, resolution (through `Fx`) and card text. Validation, legal actions, the bot, the sim and the client's card text pick it up from there.
 3. If it needs a new engine primitive, add it to `Fx` and implement it in `fxFor()` in `src/core/rules.ts`.

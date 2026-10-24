@@ -6,11 +6,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/strodanodev/deckwright.git"
+    "url": "git+https://github.com/strodanodev/tessaract.git"
   },
-  "homepage": "https://github.com/strodanodev/deckwright#readme",
+  "homepage": "https://github.com/strodanodev/tessaract#readme",
   "bugs": {
-    "url": "https://github.com/strodanodev/deckwright/issues"
+    "url": "https://github.com/strodanodev/tessaract/issues"
   },
   "type": "module",
   "packageManager": "pnpm@12.10.1",
