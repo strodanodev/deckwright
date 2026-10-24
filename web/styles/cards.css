@@ -67,7 +67,7 @@ button.tcard:disabled { cursor: default; filter: saturate(0.4) brightness(0.6); 
 .u-hp.hurt { color: #ffd0c8; }
 .u-name { position: absolute; left: 14%; right: 14%; bottom: 0; height: 18px; display: none; }
 .u-kw { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.u-kw i { font-style: normal; font-size: 8.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 5px; border-radius: 2px; color: #201404; background: var(--gold-1); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); white-space: nowrap; }
+.u-kw i { font-style: normal; font-size: clamp(7px, calc(var(--u, 84px) * 0.1), 9px); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 4px; border-radius: 2px; color: #201404; background: var(--gold-1); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); white-space: nowrap; }
 /* guard: a shield-shaped gilded border; shield: a bubble; tired: dimmed */
 .unit.guard .u-ring { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6), 0 0 0 3px #c9c2b0, 0 0 0 5px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 240, 200, 0.35); border-radius: 30% 30% 46% 46% / 22% 22% 46% 46%; }
 .unit.shielded::after { content: ''; position: absolute; inset: -5px -5px 4% -5px; border-radius: 48% 48% 16% 16% / 40% 40% 12% 12%; border: 2px solid rgba(255, 236, 160, 0.85); background: radial-gradient(circle, transparent 55%, rgba(255, 220, 120, 0.25)); box-shadow: 0 0 16px rgba(255, 220, 120, 0.6); pointer-events: none; z-index: 1; }

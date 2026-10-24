@@ -116,7 +116,8 @@
 @keyframes endReady { 50% { box-shadow: 0 0 0 3px #0b0910, 0 0 0 5px var(--gold-1), 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 50px rgba(255, 201, 94, 0.85); } }
 .match.viewing .dock, .match.viewing .plate .end-turn { display: none; }
 .dock:empty { display: none; }
-.match.viewing .hand { --w: clamp(72px, 12vh, 120px); height: auto; align-items: flex-end; margin-bottom: 0; padding-top: 8px; }
+/* the stat gems hang below the cards: leave them room above the replay bar */
+.match.viewing .hand { --w: clamp(72px, 12vh, 120px); height: auto; align-items: flex-end; margin-bottom: 0; padding-top: 8px; padding-bottom: 14px; }
 .match.viewing .battlefield { --u-max: clamp(52px, 11vh, 118px); }
 
 /* ------------------------------------------------------------------ fallen feed */
@@ -179,7 +180,7 @@
 .res-rays { position: absolute; left: 50%; top: 32%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; background: repeating-conic-gradient(from 0deg, rgba(255, 210, 120, 0.1) 0deg 5deg, transparent 5deg 15deg); mask-image: radial-gradient(circle, black 8%, transparent 55%); -webkit-mask-image: radial-gradient(circle, black 8%, transparent 55%); animation: spin 70s linear infinite; pointer-events: none; }
 .result[data-outcome='loss'] .res-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 60, 40, 0.07) 0deg 4deg, transparent 4deg 20deg); }
 .result[data-outcome='draw'] .res-rays { background: repeating-conic-gradient(from 0deg, rgba(143, 208, 255, 0.07) 0deg 5deg, transparent 5deg 15deg); }
-.res-inner { position: relative; z-index: 1; display: grid; justify-items: center; gap: 14px; text-align: center; width: min(600px, 100%); max-height: 100%; overflow-y: auto; animation: rise 0.6s 0.15s var(--ease-out) both; }
+.res-inner { position: relative; z-index: 1; display: grid; justify-items: center; gap: 14px; text-align: center; width: min(600px, 100%); max-height: 100%; overflow-y: auto; padding: 60px 70px 10px; margin-top: -60px; box-sizing: content-box; animation: rise 0.6s 0.15s var(--ease-out) both; }
 .res-emblem { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; color: #241604; background: radial-gradient(circle at 50% 35%, var(--gold-0), var(--gold-3) 70%); box-shadow: 0 0 0 6px rgba(255, 201, 94, 0.18), 0 0 60px rgba(255, 201, 94, 0.5); }
 .res-emblem svg { width: 40px; height: 40px; }
 .result[data-outcome='loss'] .res-emblem { color: #ffd8cc; background: radial-gradient(circle at 50% 35%, #8a2a1c, #2a0806 70%); box-shadow: 0 0 0 6px rgba(255, 75, 58, 0.18), 0 0 50px rgba(255, 75, 58, 0.4); }
@@ -240,7 +241,8 @@
   .pl-life { min-width: 26px; height: 26px; font-size: 13px; right: -6px; bottom: -4px; }
   .pl-name { font-size: 12px; }
   .pl-who { display: none; }
-  .pl-chips { gap: 4px; }
+  /* chips wrap to a second row rather than slide under the hero power */
+  .pl-chips { gap: 3px 4px; flex-wrap: wrap; }
   .chip-mini { height: 18px; padding: 0 5px 0 4px; font-size: 10px; }
   .pl-energy i { width: 8px; height: 11px; }
   .power { min-height: 34px; padding: 0 8px 0 3px; }
@@ -257,7 +259,7 @@
   /* on a phone the hand shows names only; hold a card to read it */
   .hand .tcard .tc-text, .hand .tcard .tc-type { display: none; }
   .hand .tcard .tc-frame { grid-template-rows: 1fr auto; }
-  .hand .tcard .tc-name { margin: 0; border-radius: 0; font-size: 1.2em; white-space: normal; line-height: 1.1; }
+  .hand .tcard .tc-name { margin: 0; padding: 0.25em 2.3em; border-radius: 0; font-size: 1.2em; white-space: normal; line-height: 1.1; }
   .hand .tcard:hover, .hand .tcard:focus-visible { transform: translateY(-8px); }
   .hand .tcard.picked { transform: translateY(-16px); }
   .killfeed { display: none; }
