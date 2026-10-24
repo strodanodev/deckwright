@@ -1,6 +1,6 @@
 // The built site (web/): the engine bundle, the game and the collection it ships with.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { compileGame, createRules, greedyBot, validateGame } from "../web/engine/deckwright.js";
 
@@ -26,4 +26,13 @@ test("the site's engine plays the shipped game to the end", () => {
   let s = rules.init("web-test", ["you", "bot"], { agents: { you: { stats: toStats(a.stats) }, bot: { stats: toStats(b.stats) } } });
   while (!rules.done(s)) s = rules.step(s, { you: 0, bot: 0, [s.p[s.turn].id]: bot(s) });
   assert.ok(s.winner >= 0);
+});
+
+test("index.html preloads every client module, so they load in parallel instead of one import level at a time", () => {
+  const html = readFileSync(new URL("../web/index.html", import.meta.url), "utf8");
+  const preloaded = new Set([...html.matchAll(/rel="modulepreload" href="\.\/([^"]+)"/g)].map((m) => m[1]));
+  const walk = (dir) => readdirSync(new URL(`../web/${dir}/`, import.meta.url), { withFileTypes: true })
+    .flatMap((d) => (d.isDirectory() ? walk(`${dir}/${d.name}`) : d.name.endsWith(".js") ? [`${dir}/${d.name}`] : []));
+  const modules = new Set(["app.js", "engine/deckwright.js", ...walk("ui"), ...walk("lib")]);
+  assert.deepEqual([...preloaded].sort(), [...modules].sort());
 });

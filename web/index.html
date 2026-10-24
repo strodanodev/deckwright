@@ -17,6 +17,32 @@
 <link rel="stylesheet" href="./styles/cards.css" />
 <link rel="stylesheet" href="./styles/screens.css" />
 <link rel="stylesheet" href="./styles/battle.css" />
+<!-- Every module and the game data, fetched in parallel with the page instead of one import level at a time
+     (test/web.test.mjs keeps this list equal to the files in ui/ and lib/). -->
+<link rel="preload" href="./data/game.json" as="fetch" crossorigin />
+<link rel="preload" href="./data/collection.json" as="fetch" crossorigin />
+<link rel="modulepreload" href="./app.js" />
+<link rel="modulepreload" href="./engine/deckwright.js" />
+<link rel="modulepreload" href="./ui/arena.js" />
+<link rel="modulepreload" href="./ui/cards.js" />
+<link rel="modulepreload" href="./ui/dom.js" />
+<link rel="modulepreload" href="./ui/icons.js" />
+<link rel="modulepreload" href="./ui/result.js" />
+<link rel="modulepreload" href="./ui/router.js" />
+<link rel="modulepreload" href="./ui/widgets.js" />
+<link rel="modulepreload" href="./ui/screens/deck.js" />
+<link rel="modulepreload" href="./ui/screens/forge.js" />
+<link rel="modulepreload" href="./ui/screens/home.js" />
+<link rel="modulepreload" href="./ui/screens/match.js" />
+<link rel="modulepreload" href="./ui/screens/meta.js" />
+<link rel="modulepreload" href="./ui/screens/select.js" />
+<link rel="modulepreload" href="./ui/screens/versus.js" />
+<link rel="modulepreload" href="./lib/abi.js" />
+<link rel="modulepreload" href="./lib/chain.js" />
+<link rel="modulepreload" href="./lib/holdings.js" />
+<link rel="modulepreload" href="./lib/tiers.js" />
+<link rel="modulepreload" href="./lib/util.js" />
+<link rel="modulepreload" href="./lib/wallet.js" />
 <style>
   /* the boot screen paints before any script or stylesheet arrives */
   html, body { margin: 0; height: 100%; background: #050409; overflow: hidden; }

@@ -320,8 +320,9 @@ app.flows = {
 
 // ------------------------------------------------------------------ start
 boot(0.75, "Lighting the braziers");
-// Warm the art the title screen shows first, so it doesn't pop in.
-await Promise.race([Promise.all(snap.cards.slice(0, 6).map((c) => new Promise((r) => { if (!c.art) return r(); const i = new Image(); i.onload = i.onerror = r; i.src = c.art; }))), wait(1500)]);
+// Warm only the art the title screen shows first (the featured champion), so it doesn't pop in; never wait long.
+const featured = home.firstFeature()?.art;
+if (featured) await Promise.race([new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = featured; }), wait(800)]);
 boot(1, "Ready");
 wallet.restore?.().catch(() => {});
 void refreshOwned();
@@ -333,5 +334,5 @@ if (!opened) {
   if (WATCH) {
     const session = RelaySession.watch(rules, RELAY);
     void versusInto(session, { kind: "watch", label: "Spectating" }, { names: ["Player one", "Player two"], subs: ["Spectating", "Live"], champs: [null, null], realm: "valhalla" }, () => !!session.state);
-  } else void go("home");
+  } else void go("home").then(() => performance.mark("deckwright:title"));   // time to the title screen, for profiling
 }

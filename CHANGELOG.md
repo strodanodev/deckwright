@@ -26,6 +26,7 @@ No rules change: every ruleset replays exactly as before. The web client is rebu
 - `web/app.js` is now only the wiring: data, wallet, profile and the flows between screens.
 - `web/ui/`: a DOM helper, the router, the arena, the cards and one module per screen.
 - `web/styles/`: theme, arena, cards, screens and battle.
+- Loading: `index.html` preloads every module and the game data, so they download in parallel instead of one import level at a time (a test keeps the list equal to the files). Boot waits only for the featured champion's art, not six images. A `deckwright:title` performance mark times the title screen.
 - `web/meta.js` and `web/app.css` are gone. Scaffolded games get `ui/` and `styles/`. Without the funnel marker in `index.html`, the client leaves out "Build your own" and credits Deckwright on the title screen.
 
 ## 0.6.0 (2026-10-24): the meta loop

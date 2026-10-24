@@ -67,6 +67,8 @@ export function homeScreen(app) {
   app.onWallet(() => { for (const i of items) i.refresh(); });
   return {
     id: "home", el, noBack: false,
+    /** The champion the title screen shows first: the one image worth waiting for during boot. */
+    firstFeature: () => pool()[0] ?? null,
     enter() {
       app.arena.setMood("menu");
       for (const i of items) i.refresh();
