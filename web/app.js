@@ -155,7 +155,7 @@ async function startMatch(champion, declaredDeck, opts = {}) {
     const session = RelaySession.dev(rules, RELAY, q.get("name") ?? `player-${randomSeed().slice(0, 6)}`, claimOf(champion), wallet.snapshot().address ?? undefined);
     if (declaredDeck) session.declareDeck(declaredDeck);
     await versusInto(session, { kind: "relay", label: "Two-player match", opponent: "Opponent", mine: champion },
-      { names: ["You", "Opponent"], subs: [champion?.name ?? "Base champion", "Joining…"], champs: [champion, null], realm },
+      { names: [champion?.name ?? "Base champion", "Opponent"], subs: ["You", "Joining…"], champs: [champion, null], realm },
       () => !!session.state);
     return;
   }
@@ -165,7 +165,7 @@ async function startMatch(champion, declaredDeck, opts = {}) {
   const session = new LocalBotSession(rules, randomSeed(), claimOf(champion), claimOf(foe), { level });
   if (declaredDeck) session.declareDeck(declaredDeck);
   await versusInto(session, { kind: "practice", label: "Practice", opponent: foe?.name ?? "House bot", foeLabel: "House bot", mine: champion, foe },
-    { names: ["You", foe?.name ?? "House bot"], subs: [champion?.name ?? "Base champion", `${["", "Easy", "Normal", "Hard"][level]} bot`], champs: [champion, foe], realm });
+    { names: [champion?.name ?? "Base champion", foe?.name ?? "House bot"], subs: ["You", `${["", "Easy", "Normal", "Hard"][level]} bot`], champs: [champion, foe], realm });
 }
 
 function closeRun() {
@@ -231,7 +231,7 @@ app.flows = {
     const session = new LocalBotSession(rules, `${run.seed}-stage-${opp.stage}`, { tokenId: me.tokenId, stats: me.stats }, { tokenId: opp.tokenId, stats: opp.stats }, { level: opp.level, foeDeck: opp.deck });
     if (deck) session.declareDeck(me.deck);
     await versusInto(session, { kind: "gauntlet", label: `Gauntlet · stage ${opp.stage}`, opponent: opp.name, foeLabel: opp.name, detail: `stage ${opp.stage}`, mine, foe },
-      { names: ["You", opp.name], subs: [mine?.name ?? "Base champion", `Stage ${opp.stage} of ${gauntlet.stages}`], champs: [mine, foe], realm: opp.stage >= gauntlet.stages ? "underworld" : pickRealm(foe, "auto") });
+      { names: [mine?.name ?? "Base champion", opp.name], subs: ["You", `Stage ${opp.stage} of ${gauntlet.stages}`], champs: [mine, foe], realm: opp.stage >= gauntlet.stages ? "underworld" : pickRealm(foe, "auto") });
   },
   gauntletChoose(i) { profile.gauntlet.current = gauntlet.choose(profile.gauntlet.current, i); saveProf(); gauntletPage.render(); },
   gauntletAbandon() { closeRun(); gauntletPage.render(); },

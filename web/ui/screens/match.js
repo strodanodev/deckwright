@@ -135,7 +135,7 @@ export function matchScreen(app) {
   // ------------------------------------------------------------------ helpers
   const act = (x) => { pick = null; session?.act(x); };
   const shortId = (id) => (/^[0-9a-f]{64}$/i.test(id) ? `${id.slice(0, 6)}…${id.slice(-4)}` : id);
-  const playerName = (id) => (id === "you" ? "Player" : id === "bot" ? "House bot" : shortId(String(id)));
+  const playerName = (id) => (id === "you" ? "You" : id === "bot" ? "House bot" : shortId(String(id)));
   const champOf = (id) => app.byToken.get(String(session?.champions?.[id]?.tokenId)) ?? null;
   const cardName = (c) => game.cards[c]?.name ?? "a card";
 
@@ -174,7 +174,7 @@ export function matchScreen(app) {
     let line = "";
     if (op === Op.Play) line = `${who} played ${cardName(P.hand[a])}${target ? ` → ${tgt()}` : ""}`;
     else if (op === Op.Power) line = `${who} used ${game.champion.powers?.[P.power]?.name ?? "a power"}${target ? ` → ${tgt()}` : ""}`;
-    else if (op === Op.Attack) line = `${who}: ${cardName(P.board[a]?.c)} attacked ${tgt()}`;
+    else if (op === Op.Attack) line = `${who === "You" ? "Your" : `${who}'s`} ${cardName(P.board[a]?.c)} attacked ${tgt()}`;
     else if (op === Op.End) line = `${who} ended the turn`;
     else if (op === Op.Concede) line = watching ? `${playerName(s.p[s.winner === 0 ? 1 : 0].id)} conceded` : `${s.winner === meIdx ? "Opponent" : "You"} conceded`;
     if (line) recent = [...recent, line].slice(-2);
@@ -315,6 +315,7 @@ export function matchScreen(app) {
       return b;
     }), ...slots(me.board.length));
     const n = me.hand.length;
+    hand.style.setProperty("--n", String(Math.max(1, n)));
     hand.replaceChildren(...me.hand.map((c, index) => {
       const def = game.cards[c];
       const b = inspectable(app.cards.cardFace(def, { tag: "button" }), def);

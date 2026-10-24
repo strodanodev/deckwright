@@ -92,11 +92,12 @@
 /* ------------------------------------------------------------------ the hand */
 /* The hand sits whole along the bottom edge, fanned; a card lifts and grows when you point at it. */
 .hand { --w: clamp(96px, 18vh, 146px); display: flex; justify-content: center; align-items: flex-start; height: calc(var(--w) * 1.4 + 34px); max-width: 100%; padding: 0 16px; margin-bottom: calc(var(--safe-b) * -1); perspective: 1000px; }
-.hand .tcard { --w: inherit; margin-left: calc(var(--w) * -0.16); transform-origin: 50% 120%; transform: rotate(calc(var(--i, 0) * 2.4deg)) translateY(calc(var(--i, 0) * var(--i, 0) * 1.6px)); animation: dealIn 0.45s var(--ease-out) both; }
+/* no overlap while the hand fits beside the end-turn medallion; past that, only as much as it must (stats stay clear) */
+.hand .tcard { --w: inherit; margin-left: clamp(calc(var(--w) * -0.34), calc((min(100vw, 1180px) - 320px - var(--n, 1) * var(--w)) / max(var(--n, 1) - 1, 1)), 8px); transform-origin: 50% 120%; transform: rotate(calc(var(--i, 0) * 2.4deg)) translateY(calc(var(--i, 0) * var(--i, 0) * 1.6px)); animation: dealIn 0.45s var(--ease-out) both; }
 .hand .tcard:first-child { margin-left: 0; }
 @keyframes dealIn { from { opacity: 0; transform: translateY(60px) rotate(0); } }
 .hand .tcard.can { box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--ok), 0 0 18px rgba(99, 227, 145, 0.55); }
-.hand .tcard.dead { filter: brightness(0.62) saturate(0.6); cursor: default; }
+.hand .tcard.dead { filter: brightness(0.8) saturate(0.7); cursor: default; }
 .hand .tcard:hover, .hand .tcard:focus-visible { z-index: 5; transform: translateY(calc(var(--w) * -0.2)) scale(1.12); }
 .hand .tcard.picked { z-index: 6; transform: translateY(calc(var(--w) * -0.28)) scale(1.12); box-shadow: 0 22px 40px rgba(0, 0, 0, 0.6), 0 0 0 3px var(--gold-0), 0 0 34px rgba(255, 201, 94, 0.85); }
 
@@ -168,12 +169,13 @@
 .pause-panel .panel-head > svg { width: 18px; height: 18px; }
 .pause-panel .close { margin-left: auto; }
 .pause-body { display: grid; gap: 10px; }
+.pause-body .hint { margin: 4px 0 0; text-align: center; }
 
 /* ------------------------------------------------------------------ result */
 /* nearly opaque and blurred: the board must not read through the stats */
-.result { position: absolute !important; inset: 0; z-index: 25 !important; display: grid; place-items: center; overflow: hidden; padding: calc(var(--safe-t) + 20px) 16px calc(var(--safe-b) + 20px); background: radial-gradient(ellipse at 50% 45%, rgba(40, 28, 20, 0.93), rgba(5, 4, 9, 0.985) 70%); backdrop-filter: blur(8px); animation: fadeIn 0.6s ease-out; }
-.result[data-outcome='loss'] { background: radial-gradient(ellipse at 50% 45%, rgba(50, 8, 6, 0.93), rgba(5, 2, 3, 0.985) 70%); }
-.result[data-outcome='draw'] { background: radial-gradient(ellipse at 50% 45%, rgba(20, 30, 44, 0.93), rgba(4, 5, 9, 0.985) 70%); }
+.result { position: absolute !important; inset: 0; z-index: 25 !important; display: grid; place-items: center; overflow: hidden; padding: calc(var(--safe-t) + 20px) 16px calc(var(--safe-b) + 20px); background: radial-gradient(ellipse at 50% 45%, #281c14, #050409 70%); animation: fadeIn 0.6s ease-out; }
+.result[data-outcome='loss'] { background: radial-gradient(ellipse at 50% 45%, #320806, #050203 70%); }
+.result[data-outcome='draw'] { background: radial-gradient(ellipse at 50% 45%, #141e2c, #040509 70%); }
 .res-rays { position: absolute; left: 50%; top: 32%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; background: repeating-conic-gradient(from 0deg, rgba(255, 210, 120, 0.1) 0deg 5deg, transparent 5deg 15deg); mask-image: radial-gradient(circle, black 8%, transparent 55%); -webkit-mask-image: radial-gradient(circle, black 8%, transparent 55%); animation: spin 70s linear infinite; pointer-events: none; }
 .result[data-outcome='loss'] .res-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 60, 40, 0.07) 0deg 4deg, transparent 4deg 20deg); }
 .result[data-outcome='draw'] .res-rays { background: repeating-conic-gradient(from 0deg, rgba(143, 208, 255, 0.07) 0deg 5deg, transparent 5deg 15deg); }
@@ -250,8 +252,8 @@
   .battlefield, .match.viewing .battlefield { --u-max: 72px; }
   .u-kw { display: none; }
   /* no hover on a phone: the whole hand shows, and scrolls sideways */
-  .hand { --w: 112px; height: auto; align-items: flex-end; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px 4px; margin-bottom: 0; scrollbar-width: none; perspective: none; }
-  .hand .tcard { --w: 112px; margin-left: -12px; transform: none; }
+  .hand { --w: 112px; height: auto; align-items: flex-end; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px calc(var(--safe-b) + 14px); margin-bottom: 0; scrollbar-width: none; perspective: none; }
+  .hand .tcard { --w: 112px; margin-left: -6px; transform: none; }
   /* on a phone the hand shows names only; hold a card to read it */
   .hand .tcard .tc-text, .hand .tcard .tc-type { display: none; }
   .hand .tcard .tc-frame { grid-template-rows: 1fr auto; }
