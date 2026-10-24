@@ -4,11 +4,14 @@
  * on what is really hot, and AgX tone mapping. Lighter than the chess stage on purpose: no ambient occlusion, mirror
  * floor or shadow pass, because the cards are the bright thing on screen here, not the set.
  *
+ * It runs in a Web Worker on an OffscreenCanvas (worker.ts), so it never touches the DOM: the page sends the size,
+ * pixel ratio, pointer type and visibility in.
+ *
  * Cost control:
  *   - a frame governor steps the resolution down (1.5x, 1x, 0.75x of CSS pixels) when the average drops under 45 fps
- *     and reports failure if even the lowest step can't hold 28 fps, so the client falls back to the CSS arena;
+ *     and reports failure if even the lowest step can't hold 24 fps, so the client falls back to the CSS arena;
  *   - behind the battle (mood "battle") it draws every other frame: the level is dimmed there and barely moves;
- *   - a hidden tab draws nothing (requestAnimationFrame stops).
+ *   - a hidden page draws nothing.
  */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -48,11 +51,17 @@ export class Stage {
   private sample = 0;
   private lowStreak = 0;
   private workMs = 0;
-  private stats: StageStats = { fps: 60, pixelRatio: 1, drawCalls: 0, triangles: 0, frameMs: 0 };
+  private stats: StageStats = { fps: 0, pixelRatio: 1, drawCalls: 0, triangles: 0, frameMs: 0 };
+  private width = 1;
+  private height = 1;
+  private dpr = 1;
+  /** The page is hidden: draw nothing. */
+  hidden = false;
   /** Called when even the lowest resolution can't hold the frame rate: the client drops back to the CSS arena. */
   onTooSlow: (() => void) | null = null;
 
-  constructor(readonly canvas: HTMLCanvasElement, private readonly still: boolean) {
+  constructor(canvas: HTMLCanvasElement | OffscreenCanvas, opts: { still: boolean; coarse: boolean; width: number; height: number; dpr: number }) {
+    this.still = opts.still;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.AgXToneMapping;
@@ -60,7 +69,7 @@ export class Stage {
     // count draw calls over the whole frame (every pass), not just the last one
     this.renderer.info.autoReset = false;
     // phones start one step down: a weak GPU shouldn't have to prove itself slow first
-    this.ratioStep = matchMedia('(pointer: coarse)').matches ? 1 : 0;
+    this.ratioStep = opts.coarse ? 1 : 0;
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -93,7 +102,20 @@ export class Stage {
     this.composer.addPass(new OutputPass());
 
     this.camera.position.set(0, 8.2, 12.6);
-    window.addEventListener('resize', this.resize);
+    this.setSize(opts.width, opts.height, opts.dpr);
+  }
+  private readonly still: boolean;
+
+  /** The renderer's GPU, for spotting software rendering (SwiftShader, llvmpipe): those can't run the arena well. */
+  gpuName(): string {
+    const gl = this.renderer.getContext();
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    return String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  }
+
+  /** The canvas's CSS size and the device pixel ratio, from the page. */
+  setSize(width: number, height: number, dpr: number): void {
+    this.width = Math.max(1, width); this.height = Math.max(1, height); this.dpr = dpr || 1;
     this.resize();
   }
 
@@ -152,9 +174,9 @@ export class Stage {
   onUpdate(fn: (dt: number, t: number) => void): void { this.updaters.push(fn); }
   getStats(): StageStats { return { ...this.stats }; }
 
-  private readonly resize = (): void => {
-    const w = this.canvas.clientWidth || window.innerWidth, h = this.canvas.clientHeight || window.innerHeight;
-    const ratio = Math.min(window.devicePixelRatio || 1, RATIOS[this.ratioStep]);
+  private resize(): void {
+    const w = this.width, h = this.height;
+    const ratio = Math.min(this.dpr, RATIOS[this.ratioStep]);
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(w, h, false);
     this.composer.setPixelRatio(ratio);
@@ -168,7 +190,7 @@ export class Stage {
     if (shift) this.camera.setViewOffset(w, h, -shift, 0, w, h); else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.stats.pixelRatio = ratio;
-  };
+  }
 
   /** Menu: a slow high circle round the dais (Rapture Chess's attract camera). Battle: high over the dais, barely drifting. */
   private place(dt: number, t: number): void {
@@ -190,14 +212,15 @@ export class Stage {
   }
 
   /** Step the resolution down when the frame rate can't hold; report when nothing is left to give. */
-  private govern(dt: number): void {
-    this.frames++;
+  /** `drawn`: this tick rendered a frame (behind the battle every other tick is skipped on purpose). */
+  private govern(dt: number, drawn: boolean): void {
+    if (drawn) this.frames++;
     this.sample += dt;
     if (this.sample < 2) return;
     this.stats.fps = Math.round(this.frames / this.sample);
-    this.stats.frameMs = Math.round((this.workMs / this.frames) * 100) / 100;
+    this.stats.frameMs = Math.round((this.workMs / Math.max(1, this.frames)) * 100) / 100;
     this.frames = 0; this.sample = 0; this.workMs = 0;
-    if (document.hidden) return;
+    if (this.hidden) return;
     const target = this.mood === 'battle' ? 28 : 45;   // battle draws every other frame by design
     if (this.stats.fps >= target) { this.lowStreak = 0; return; }
     if (++this.lowStreak < 2) return;
@@ -210,9 +233,11 @@ export class Stage {
     this.renderer.setAnimationLoop(() => {
       this.timer.update();
       const dt = Math.min(0.05, this.timer.getDelta()), t = this.timer.getElapsed();
-      this.govern(dt);
+      if (this.hidden) return;
       // behind the battle the level is dimmed and nearly still: half the frames are plenty
-      if (this.mood === 'battle' && (this.frame++ & 1)) return;
+      const skip = this.mood === 'battle' && (this.frame++ & 1) === 1;
+      this.govern(dt, !skip);
+      if (skip) return;
       const t0 = performance.now();
       this.renderer.info.reset();
       this.sky.material.uniforms.time.value = t;
@@ -228,7 +253,6 @@ export class Stage {
 
   dispose(): void {
     this.renderer.setAnimationLoop(null);
-    window.removeEventListener('resize', this.resize);
     this.composer.dispose();
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;

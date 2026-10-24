@@ -95,35 +95,63 @@ export function createArena(root) {
   };
 
   /**
-   * Swap the CSS level for Rapture Chess's real one: the Blender-built arenas rendered live with three.js
-   * (web/arena3d.js, built from src/arena3d). Only after the title screen is up, and only where it can run well:
-   * WebGL2, no data-saver, and the arena models present (a scaffolded game ships none; drop GLBs into
-   * assets/arena/ to add your own). Anything that fails, or a device that can't hold the frame rate, keeps the CSS arena.
+   * Swap the CSS level for Rapture Chess's real one: the Blender-built arenas rendered live with three.js in a Web
+   * Worker on an OffscreenCanvas (web/arena3d.js, built from src/arena3d), so none of its work lands on the main
+   * thread. Only after the title screen is up, and only where it can run well: OffscreenCanvas WebGL, a hardware
+   * GPU (the worker checks), no data saver, and the arena models present (a scaffolded game ships none; drop GLBs
+   * into assets/arena/ to add your own). Anything that fails, or a device that can't hold the frame rate, keeps the
+   * CSS arena, and #arena[data-fallback] says why.
    */
   async function upgrade() {
     if (three || root.classList.contains("three-failed")) return false;
-    const base = "./assets/arena/";
+    const base = new URL("./assets/arena/", location.href).href;
+    let canvas = null, worker = null;
     try {
       if (navigator.connection?.saveData) throw new Error("data saver is on");
-      // failIfMajorPerformanceCaveat: a software renderer refuses at once, before it spends a second initialising
-      const gl = document.createElement("canvas").getContext("webgl2", { failIfMajorPerformanceCaveat: true });
-      if (!gl) throw new Error("no hardware WebGL2");
-      // A software renderer (no GPU, or a blocklisted one) compiles shaders on the CPU: seconds of frozen menu. Skip it.
-      const info = gl.getExtension("WEBGL_debug_renderer_info");
-      const gpu = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
-      if (/swiftshader|llvmpipe|software|basic render/i.test(gpu)) throw new Error(`software rendering (${gpu})`);
+      if (!("transferControlToOffscreen" in HTMLCanvasElement.prototype) || typeof Worker !== "function") throw new Error("no OffscreenCanvas");
+      // Safari's three.js texture path needs the DOM, which a worker doesn't have
+      if (/^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent)) throw new Error("Safari: OffscreenCanvas textures unsupported");
       const head = await fetch(`${base}${api.realm}.glb`, { method: "HEAD" });
       if (!head.ok) throw new Error(`no arena model (${head.status})`);
-      const { mountArena3D } = await import("../arena3d.js");
-      const canvas = h("canvas", { class: "ar-3d", aria: { hidden: "true" } });
+      canvas = h("canvas", { class: "ar-3d", aria: { hidden: "true" } });
       root.prepend(canvas);
-      const fail = () => { three?.dispose(); three = null; canvas.remove(); root.classList.remove("three"); root.classList.add("three-failed"); };
-      three = await mountArena3D(canvas, { base, realm: api.realm, mood: api.mood, still: matchMedia("(prefers-reduced-motion: reduce)").matches, onTooSlow: () => { console.info("[arena] the 3D arena can't keep up here: using the CSS arena"); fail(); } })
-        .catch((e) => { canvas.remove(); throw e; });
+      const offscreen = canvas.transferControlToOffscreen();
+      worker = new Worker("./arena3d.js");
+      let lastStats = null;
+      const size = () => worker.postMessage({ type: "size", width: innerWidth, height: innerHeight, dpr: devicePixelRatio || 1 });
+      const visible = () => worker.postMessage({ type: "visible", visible: !document.hidden });
+      const stop = () => { worker?.terminate(); canvas?.remove(); removeEventListener("resize", size); document.removeEventListener("visibilitychange", visible); };
+      const ready = new Promise((resolve, reject) => {
+        worker.onerror = (e) => reject(new Error(`worker error: ${e.message || "failed to start"}`));
+        worker.onmessage = (e) => {
+          const m = e.data;
+          if (m.type === "ready") resolve(m);
+          else if (m.type === "failed") reject(new Error(m.reason));
+          else if (m.type === "stats") lastStats = m.stats;
+          else if (m.type === "tooSlow") {
+            console.info("[arena] the 3D arena can't keep up here: using the CSS arena");
+            stop(); three = null; root.classList.remove("three"); root.classList.add("three-failed"); root.dataset.fallback = "too slow on this device";
+          }
+        };
+        setTimeout(() => reject(new Error("timed out")), 30000);
+      });
+      worker.postMessage({ type: "init", canvas: offscreen, width: innerWidth, height: innerHeight, dpr: devicePixelRatio || 1, coarse: matchMedia("(pointer: coarse)").matches, still: matchMedia("(prefers-reduced-motion: reduce)").matches, base, realm: api.realm, mood: api.mood }, [offscreen]);
+      const info = await ready;
+      addEventListener("resize", size);
+      document.addEventListener("visibilitychange", visible);
+      three = {
+        setRealm: (id) => worker.postMessage({ type: "realm", id }),
+        setMood: (mood) => worker.postMessage({ type: "mood", mood }),
+        quake: () => worker.postMessage({ type: "quake" }),
+        stats: () => (lastStats ? { ...lastStats, gpu: info.gpu, setupMs: info.ms } : { gpu: info.gpu, setupMs: info.ms }),
+        dispose: stop,
+      };
+      // the realm or mood may have changed while it loaded
+      three.setRealm(api.realm); three.setMood(api.mood);
       root.classList.add("three");
       return true;
     } catch (e) {
+      worker?.terminate(); canvas?.remove();
       console.info(`[arena] CSS arena: ${e.message}`);
       root.dataset.fallback = e.message;   // why, for DevTools and scripts/profile-web.mjs
       root.classList.add("three-failed");
