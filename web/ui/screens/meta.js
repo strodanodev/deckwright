@@ -3,6 +3,7 @@
 import { h, icon, stagger } from "../dom.js";
 import { pageHead } from "../router.js";
 import { tile, walletChip } from "../widgets.js";
+import { sigil } from "../sigil.js";
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const when = (ms) => new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -20,9 +21,16 @@ export function gauntletScreen(app) {
     const run = app.profile().gauntlet.current;
     const road = h("ol", { class: "road" });
     const stage = run ? Math.min(run.wins + 1, g.stages) : 0;
+    // every stage's foe follows from the run's seed, so the whole ladder can be shown up front
+    const foes = run ? Array.from({ length: g.stages }, (_, k) => g.opponent({ ...run, wins: k })) : [];
     for (let i = 1; i <= g.stages; i++) {
       const state = run && i <= run.wins ? "won" : run && i === stage && !run.over ? "next" : run?.over && i === stage && !run.cleared ? "lost" : "";
-      road.append(h("li", { class: state }, h("span", { class: "rn", text: i === g.stages ? "" : String(i) }, i === g.stages ? icon("crown") : null), h("span", { class: "rl", text: i === g.stages ? "Champion" : `Stage ${i}` })));
+      const opp = foes[i - 1], card = opp?.tokenId ? app.byToken.get(String(opp.tokenId)) : null;
+      road.append(h("li", { class: `stage ${state}` },
+        h("div", { class: "st-face" }, card?.art ? h("img", { src: card.art, alt: "", loading: "lazy", decoding: "async" }) : icon(i === g.stages ? "crown" : "foe"),
+          state === "won" ? h("span", { class: "st-mark" }, icon("check")) : state === "lost" ? h("span", { class: "st-mark" }, icon("close")) : null),
+        h("span", { class: "st-n", text: i === g.stages ? "Final" : `Stage ${i}` }),
+        h("span", { class: "st-name", text: opp ? (card?.name ?? opp.name) : "" })));
     }
     const panel = h("div", { class: "panel frame meta-panel" });
     const head = (t, badge) => h("div", { class: "panel-head" }, h("h2", { text: t }), badge ? h("span", { class: "badge outline", text: badge }) : null);
@@ -76,6 +84,7 @@ export function puzzleScreen(app) {
       const solved = app.profile().puzzles[p.date] ?? null;
       const stars = p.odds <= 0.03 ? 3 : p.odds <= 0.12 ? 2 : 1;
       panel.append(
+        h("div", { class: "hero-art" }, sigil({ name: p.date, element: "neutral", type: "relic" })),
         h("div", { class: "panel-head" }, h("h2", { text: p.date }), h("span", { class: "badge outline", text: solved ? "Solved" : "Unsolved" })),
         h("div", { class: "panel-body stack" },
           h("div", { class: "stars", aria: { label: `Difficulty ${stars} of 3` } }, ...[1, 2, 3].map((i) => h("span", { class: i <= stars ? "on" : "" }, icon("gem")))),
@@ -116,7 +125,15 @@ export function profileScreen(app) {
     });
     const history = h("div", { class: "panel frame meta-panel" }, h("div", { class: "panel-head" }, h("h2", { text: "Recent matches" })),
       rows.length ? h("ol", { class: "history" }, ...rows) : h("div", { class: "panel-body" }, h("p", { class: "lede", text: "No matches yet. Play one and it shows up here, with its replay." })));
-    body.replaceChildren(stagger(tiles), h("div", { class: "profile-cols" }, history, champs));
+    const top = sum.byChampion[0], topCard = top ? app.byToken.get(String(top.champion)) : null;
+    const hero = h("div", { class: "profile-hero panel frame" },
+      h("div", { class: "ph-card" }, topCard ? app.cards.championCard(topCard, { eager: true }) : h("div", { class: "ccard base" }, h("div", { class: "inner" }, icon("emblem")))),
+      h("div", { class: "ph-body" },
+        h("span", { class: "eyebrow", text: topCard ? "Your most-played champion" : "Your record" }),
+        h("h2", { class: "display ph-name", text: topCard ? topCard.name : "No matches yet" }),
+        h("p", { class: "ph-record tabnum", text: `${sum.wins} won · ${sum.losses} lost` }),
+        stagger(tiles)));
+    body.replaceChildren(hero, h("div", { class: "profile-cols" }, history, champs));
   }
   return { id: "profile", el, render, enter() { app.arena.setMood("menu"); render(); } };
 }

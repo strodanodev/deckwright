@@ -6,6 +6,17 @@ import { sigil } from "./sigil.js";
 
 const KIND_RARITY = { God: "legendary", Titan: "epic", King: "rare", Demigod: "uncommon", Mortal: "common" };
 const RARITY_NAME = { legendary: "Legendary", epic: "Epic", rare: "Rare", uncommon: "Uncommon", common: "Common" };
+// Rules text: keywords and trigger labels are picked out (the text still goes in through textContent).
+const TRIGGER_LABELS = ["On play", "Last words", "Each turn", "On attack"];
+const RICH = new RegExp(`(${[...TRIGGER_LABELS, ...Object.keys(KEYWORDS)].join("|")})`, "gi");
+function richLine(text) {
+  return text.split(RICH).filter(Boolean).map((part) => {
+    if (TRIGGER_LABELS.some((t) => t.toLowerCase() === part.toLowerCase())) return h("b", { class: "trig", text: part });
+    if (Object.keys(KEYWORDS).includes(part.toLowerCase())) return h("b", { class: "kw", text: part });
+    return part;
+  });
+}
+
 const finePointer = typeof matchMedia === "function" && matchMedia("(pointer: fine)").matches;
 
 /** Pointer-follow tilt and foil: transform only, so it stays on the compositor. */
@@ -50,7 +61,7 @@ export function createCards(app) {
         artBox(def, "tc-art"),
         h("div", { class: "tc-name", text: def.name }),
         h("div", { class: "tc-type", text: typeLine(def) }),
-        h("div", { class: "tc-text" }, ...text.map((t) => h("p", { text: t })))),
+        h("div", { class: "tc-text" }, ...text.map((t) => h("p", null, ...richLine(t))))),
       h("span", { class: "tc-cost tabnum", text: cost }),
       def.type === "unit" ? h("span", { class: "tc-atk tabnum", text: def.attack }) : null,
       def.type === "unit" ? h("span", { class: "tc-hp tabnum", text: def.health }) : null,

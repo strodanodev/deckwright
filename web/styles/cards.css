@@ -11,8 +11,9 @@
 .tcard { --rar: var(--r-common); --el: var(--neutral); --w: 150px; position: relative; display: block; width: var(--w); aspect-ratio: 5 / 7; padding: 3px; border: 0; border-radius: 9px; color: var(--text); text-align: left; flex: none;
   background: linear-gradient(160deg, color-mix(in srgb, var(--rar) 90%, white), color-mix(in srgb, var(--rar) 50%, black) 45%, color-mix(in srgb, var(--rar) 85%, white) 100%);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.7); font-size: calc(var(--w) * 0.0733); transition: transform 0.22s var(--ease-out), box-shadow 0.22s, filter 0.22s; }
-.tc-frame { position: relative; height: 100%; border-radius: 7px; overflow: hidden; display: grid; grid-template-rows: 52% auto auto 1fr; background: linear-gradient(180deg, #17121e, #0b0910); }
-.tc-art { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 45%, #1a1420), #0a080d 75%); display: grid; place-items: center; color: var(--el); }
+.tc-frame { position: relative; height: 100%; border-radius: 7px; overflow: hidden; display: grid; grid-template-rows: 52% auto auto 1fr; background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--el) 12%, transparent), transparent 60%), linear-gradient(180deg, #17121e, #0b0910); }
+.tc-frame::after { content: ''; position: absolute; inset: 2px; z-index: 2; border: 1px solid rgba(255, 214, 140, 0.2); border-radius: 5px; pointer-events: none; }
+.tc-art { position: relative; overflow: hidden; border-bottom: 1px solid color-mix(in srgb, var(--rar) 70%, #fff3d0); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 0 18px rgba(0, 0, 0, 0.55); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 45%, #1a1420), #0a080d 75%); display: grid; place-items: center; color: var(--el); }
 .tc-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
 .tc-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, rgba(11, 9, 16, 0.9)); }
 .tc-art .sigil, .u-art .sigil { position: absolute; inset: 0; width: 100%; height: 100%; color: color-mix(in srgb, var(--el) 85%, white); }
@@ -20,10 +21,18 @@
 .tc-art .glyph { width: 58%; height: 58%; opacity: 0.95; filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 30px currentColor); }
 /* no painting (spells, relics, tokens): an element-coloured glow, not a bare icon on black */
 .tc-art:not(:has(img)), .u-art:not(:has(img)) { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--el) 75%, white 10%) 0%, color-mix(in srgb, var(--el) 40%, #1a1420) 35%, #0a080d 78%); }
-.tc-name { position: relative; z-index: 1; margin: -1.25em 6px 0; padding: 0.3em 0.5em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.08em; letter-spacing: 0.04em; line-height: 1.15; color: var(--ivory);
-  background: linear-gradient(180deg, #2a2133, #120e18); border: 1px solid color-mix(in srgb, var(--rar) 60%, transparent); border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px #000; }
-.tc-type { padding: 0.35em 0.6em 0; text-align: center; font-size: 0.78em; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in srgb, var(--el) 70%, var(--muted)); }
-.tc-text { padding: 0.25em 0.75em 0.6em; display: grid; align-content: center; gap: 0.15em; text-align: center; font-size: 0.92em; line-height: 1.3; color: #e2d9c8; overflow: hidden; }
+.tc-name { --cut: 0.7em; position: relative; z-index: 3; isolation: isolate; margin: -1.25em 2px 0; padding: 0.32em 1em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.08em; letter-spacing: 0.04em; line-height: 1.15; color: var(--ivory);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rar) 85%, white), color-mix(in srgb, var(--rar) 45%, black));
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px #000; }
+.tc-name::before { content: ''; position: absolute; inset: 1px; z-index: -1; clip-path: inherit; background: linear-gradient(180deg, #3a2f46, #1a1422 55%, #0e0a13); }
+.tc-type { display: flex; align-items: center; justify-content: center; gap: 0.5em; padding: 0.4em 0.7em 0; text-align: center; white-space: nowrap; font-size: 0.78em; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in srgb, var(--el) 70%, var(--muted)); }
+.tc-type::before, .tc-type::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--el) 60%, var(--gold-3))); }
+.tc-type::after { transform: scaleX(-1); }
+.tc-text { margin: 0.3em 0.5em 0.55em; padding: 0.3em 0.45em; border-radius: 4px; display: grid; align-content: center; gap: 0.2em; text-align: center; font-size: 1em; line-height: 1.25; color: #ece3d2; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 240, 210, 0.05), rgba(0, 0, 0, 0.28)); box-shadow: inset 0 0 0 1px rgba(255, 214, 140, 0.13); }
+.tc-text:empty { visibility: hidden; }
+.tc-text .kw { color: var(--gold-1); font-weight: 700; }
+.tc-text .trig { color: color-mix(in srgb, var(--el) 55%, white); font-weight: 600; }
 .tc-text p { margin: 0; }
 .tc-cost, .tc-atk, .tc-hp { position: absolute; z-index: 3; display: grid; place-items: center; width: 2.6em; height: 2.6em; font-family: var(--font-display); font-weight: 700; font-size: 1.3em; color: #fff; text-shadow: 0 1px 3px #000; }
 .tc-cost { top: -0.35em; left: -0.35em; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #c9ecff, #2f8fe0 45%, #0d3a70 80%); box-shadow: 0 0 0 2px #0b0910, 0 0 0 3.5px color-mix(in srgb, var(--rar) 80%, white), 0 4px 10px rgba(0, 0, 0, 0.6); }
@@ -42,7 +51,7 @@ button.tcard:disabled { cursor: default; filter: saturate(0.4) brightness(0.6); 
 .tcard.small { --w: 64px; }
 .tcard.small .tc-text, .tcard.small .tc-type, .tcard.small .tc-gem { display: none; }
 .tcard.small .tc-frame { grid-template-rows: 1fr auto; }
-.tcard.small .tc-name { margin: 0; border-radius: 0; font-size: 0.85em; }
+.tcard.small .tc-name { margin: 0; font-size: 0.85em; clip-path: none; }
 
 /* ------------------------------------------------------------------ the unit token on the board */
 .unit { --rar: var(--r-common); --el: var(--neutral); position: relative; width: var(--u, 84px); height: calc(var(--u, 84px) * 1.22); padding: 0; border: 0; background: none; color: var(--text); flex: none; transition: transform 0.22s var(--ease-out), filter 0.22s; }
