@@ -207,7 +207,7 @@
   .hand .tcard { --w: 84px; margin-left: -12px; transform: none; }
   .hand .tcard:hover, .hand .tcard:focus-visible { transform: translateY(-8px); }
   .hand .tcard.picked { transform: translateY(-16px); }
-  .dock { right: 10px; bottom: calc(var(--safe-b) + 160px); gap: 10px; }
+  .dock { right: 10px; bottom: calc(var(--safe-b) + 222px); gap: 10px; }
   .end-turn { width: 70px; height: 70px; }
   .et-label { font-size: 10px; letter-spacing: 0.08em; }
   .dock .icon-btn { width: 40px; height: 40px; }

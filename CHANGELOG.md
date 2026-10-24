@@ -11,10 +11,12 @@ No rules change: every ruleset replays exactly as before.
 - the arena with its flowing lava shader and flickering fire;
 - bloom on what is hot, and AgX tone mapping.
 
-The camera circles the arena on the title screen and looks down over the dais in battle. The port is `src/arena3d` (stage and realm), bundled to `web/arena3d.js`.
+The camera circles the arena on the title screen and looks down over the dais in battle. The port is `src/arena3d` (stage, realm and a worker entry), bundled to `web/arena3d.js`.
+
+**Off the main thread.** The arena renders in a Web Worker on an OffscreenCanvas: three.js, the model parse, shader compiles and every frame run there. The page only creates the canvas and relays size, visibility, realm, mood and hits.
 
 **Loading**
-- The 3D arena loads after the title screen, when the page is idle. It needs a real GPU and is skipped for software renderers and data-saver mode.
+- The 3D arena loads after the title screen, when the page is idle. It needs OffscreenCanvas WebGL and a real GPU, which the worker checks. Software renderers, data-saver mode and Safari keep the CSS arena; three.js's texture loading needs the DOM on Safari.
 - The models were decoded from Draco and quantized (KHR_mesh_quantization), so three.js reads them with no decoder, WebAssembly or worker.
 - Shaders compile in the background (`compileAsync`).
 - If anything fails, or the frame rate can't hold even at reduced resolution, the client keeps the CSS arena. `#arena[data-fallback]` says why.
@@ -24,6 +26,10 @@ The camera circles the arena on the title screen and looks down over the dais in
 - Resolution steps from 1.5× down to 0.75× if the frame rate drops.
 - The arena draws at 30 fps behind the battle and nothing in a hidden tab.
 - `window.deckwright.arenaStats()` reports frame rate, frame time, draw calls and triangles.
+
+**Measured** (`scripts/profile-web.mjs`, 5 warm loads each, Intel Iris Xe):
+- **Main-thread blocking after the title:** from about 0.45 s locally and 1 s live (median) when the arena ran on the main thread, to **0 ms** with the worker, on both the GPU and the software path.
+- **Frame cost:** about 157 fps headless on the GPU, 0.4–1.4 ms of CPU per frame, 24–25 draw calls.
 
 **Profiling:** `node scripts/profile-web.mjs <url> [--runs 5] [--gpu] [--detail]`. It drives headless Chrome over the DevTools protocol, with one cold load and N warm ones, and reports:
 - time to the title screen, page-ready and load times;

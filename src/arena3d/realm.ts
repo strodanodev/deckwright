@@ -75,12 +75,10 @@ export class Realm {
     let model = this.cache.get(id);
     if (!model) {
       model = this.loader.loadAsync(`${this.base}${id}.glb`).then(async (g) => {
-        performance.mark(`arena:${id}:parsed`);
         this.dress(g.scene, id);
         // compile its shaders off the main thread (KHR_parallel_shader_compile) before it is ever drawn, so the first
         // frame with the arena doesn't stall the menu while the driver compiles
         await this.stage.renderer.compileAsync(g.scene, this.stage.camera, this.stage.scene);
-        performance.mark(`arena:${id}:compiled`);
         return g.scene;
       }, (e) => { console.warn('[arena] realm failed', id, e); this.cache.delete(id); return null; });
       this.cache.set(id, model);
