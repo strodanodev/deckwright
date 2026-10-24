@@ -2,6 +2,19 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.7 (2026-10-25): the battle layout, rebuilt
+
+No rules change: every ruleset replays exactly as before.
+
+- **The board is seated in the arena:** the lanes sit on a gilt-rimmed table mat, with contact shadows under the units.
+- **Hero plates:** compact plates of up to 640px, with 80px portraits that break out of them.
+- **Bigger units:** on wide screens the turn medallion moves to the top-left, so the board gains a row and units grow to `clamp(72px, 18vh, 160px)`.
+- **Low life:** a plate turns red below a quarter of its champion's life (or at 5). When it's your own champion, the screen edges pulse as well.
+- **Fixes from the third review:**
+  - phone chips and hand names no longer clip;
+  - the replay bar no longer covers the hand's stat gems;
+  - the result glow, tag size, champion-select spacing and profile mini card are corrected.
+
 ## 0.9.6 (2026-10-25): card frames, illustrated pages and arena light
 
 No rules change: every ruleset replays exactly as before.
