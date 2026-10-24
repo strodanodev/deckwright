@@ -2,6 +2,17 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.2 (2026-10-25): the re-review
+
+No rules change: every ruleset replays exactly as before.
+
+- The 3D arena blurs behind menu pages.
+- Champion select keeps "Enter the arena" in a fixed footer.
+- The result screen says "You conceded" after a concede.
+- The Gauntlet's loading tip shows only in the Gauntlet.
+- "1 match", not "1 matches".
+- More phone layout fixes.
+
 ## 0.9.1 (2026-10-25): the visual review
 
 No rules change: every ruleset replays exactly as before.
