@@ -94,7 +94,7 @@ export function profileScreen(app) {
   function render() {
     const prof = app.profile(), sum = app.summary();
     const tiles = h("div", { class: "tiles big" },
-      tile(String(sum.played), "matches"),
+      tile(String(sum.played), sum.played === 1 ? "match" : "matches"),
       tile(sum.wins + sum.losses ? pct(sum.winRate) : "–", "win rate"),
       tile(String(sum.streak), `streak · best ${sum.bestStreak}`),
       tile(prof.gauntlet.bestStage ? `${prof.gauntlet.bestStage}/8` : "–", `Gauntlet · ${prof.gauntlet.cleared} cleared`),

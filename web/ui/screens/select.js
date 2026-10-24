@@ -45,7 +45,7 @@ export function selectScreen(app) {
     const shownRealm = realmChoice === "auto" ? realmFor(c) : realmChoice;
     app.arena.setRealm(shownRealm);
     const power = c ? app.heroPowerOf(c) : null;
-    detail.replaceChildren(
+    detail.replaceChildren(h("div", { class: "cd-scroll" },
       h("div", { class: "cd-card" }, c ? app.cards.championCard(c, { owned: app.owned.has(String(c.tokenId)), eager: true, tilted: true }) : h("div", { class: "ccard base" }, h("div", { class: "inner" }, icon("emblem")))),
       h("div", { class: "cd-body" },
         h("span", { class: "eyebrow", text: c ? [c.element, c.kind].filter(Boolean).join(" · ") : "No champion" }),
@@ -56,8 +56,8 @@ export function selectScreen(app) {
         h("div", { class: "field" }, h("span", { text: `Battlefield · ${REALMS[shownRealm].name}` }),
           seg([["auto", "Auto"], ["valhalla", REALMS.valhalla.name], ["underworld", REALMS.underworld.name]], realmChoice, (v) => { app.setPref("realm", v); renderDetail(); })),
         mode !== "relay" ? h("div", { class: "field" }, h("span", { text: mode === "gauntlet" ? "Foes get stronger each stage" : "House bot" }),
-          mode === "practice" ? seg(LEVELS, app.prefs.level, (v) => { app.setPref("level", v); renderDetail(); }) : null) : null,
-        h("div", { class: "cta-dock" }, confirm)));
+          mode === "practice" ? seg(LEVELS, app.prefs.level, (v) => { app.setPref("level", v); renderDetail(); }) : null) : null)),
+      h("div", { class: "cta-dock" }, confirm));
     confirm.replaceChildren(icon("swords"), MODE_COPY[mode][2]);
   }
 
