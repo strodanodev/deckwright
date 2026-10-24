@@ -9,9 +9,9 @@ const TIPS = [
   "Every match is a replayable record: share it from the result screen.",
   "Elements beat each other in a cycle: the stronger element deals bonus damage.",
   "Your hero power is once per turn and never leaves your hand.",
-  "Press Esc in battle for the battle menu.",
-  "In the Gauntlet, one loss ends the run. Choose your rewards with the next foe in mind.",
+  "Hold or right-click any card to read it in full.",
 ];
+const GAUNTLET_TIP = "In the Gauntlet, one loss ends the run. Choose your rewards with the next foe in mind.";
 
 export function versusScreen(app) {
   const side = (s) => {
@@ -33,7 +33,7 @@ export function versusScreen(app) {
 
   return {
     id: "versus", el, noBack: true,
-    /** info: { names: [you, foe], subs: [you, foe], champs: [card|null, card|null], realm } */
+    /** info: { names: [you, foe], subs: [you, foe], champs: [card|null, card|null], realm, kind } */
     show(info) {
       [a, b].forEach((s, i) => {
         const c = info.champs[i];
@@ -43,7 +43,8 @@ export function versusScreen(app) {
         s.sub.textContent = info.subs[i];
       });
       realm.textContent = `Battlefield · ${info.realm}`;
-      tip.textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+      const tips = info.kind === "gauntlet" ? [...TIPS, GAUNTLET_TIP, GAUNTLET_TIP] : TIPS;
+      tip.textContent = tips[Math.floor(Math.random() * tips.length)];
       bar.style.transform = "scaleX(0)";
       el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
     },

@@ -9,7 +9,7 @@
 // This file wires the data, the wallet, the profile and the flows between screens. The screens are in ui/screens,
 // the level behind them in ui/arena.js, the design in styles/. Every name on the page goes in through textContent.
 import {
-  compileGame, createRules, LocalBotSession, RelaySession, ReplaySession, PuzzleSession, encodeRecord, decodeRecord, REPLAY_PARAM,
+  decode, Op, compileGame, createRules, LocalBotSession, RelaySession, ReplaySession, PuzzleSession, encodeRecord, decodeRecord, REPLAY_PARAM,
   statsFromCore, describeEffect, createGauntlet, createPuzzles, loadProfile, saveProfile, addMatch, summarize, utcDate,
 } from "./engine/tessaract.js";
 import { createWallet } from "./lib/wallet.js";
@@ -134,7 +134,7 @@ const pickRealm = (champion, choice = prefs.realm) => (choice === "auto" ? realm
 /** Show the versus screen, wait for `ready` (and at least its animation), then wipe into the battle. */
 async function versusInto(session, ctx, { names, subs, champs, realm }, ready = () => true) {
   context = ctx; recorded = false;
-  versus.show({ names, subs, champs, realm: realmName(realm) });
+  versus.show({ names, subs, champs, realm: realmName(realm), kind: ctx.kind });
   await go("versus", { wipe: true, before: () => arena.setRealm(realm) });
   const t0 = performance.now();
   for (;;) {
@@ -290,11 +290,13 @@ app.flows = {
       }
     }
     const me = s.p[meIdx], foe = s.p[meIdx === 0 ? 1 : 0];
+    const conceded = s.winner !== 2 && decode(s.last ?? 0).op === Op.Concede;
     const name = (id) => (id === "you" ? "You" : id === "bot" ? "House bot" : String(id).slice(0, 10));
     const headline = puzzleState ? (puzzleState === "solved" ? "Solved" : "Not this time")
       : s.winner === 2 ? "Draw" : watching ? `${name(s.p[s.winner].id)} wins` : s.winner === meIdx ? "Victory" : "Defeat";
     const sub = puzzleState
       ? (puzzleState === "solved" ? `${session.actions} actions. The bot needed ${session.puzzle.par}.` : "Your turn ended without a win. Try another line.")
+      : conceded ? (watching ? `${name(s.p[s.winner === 0 ? 1 : 0].id)} conceded` : s.winner === meIdx ? "Your opponent conceded" : "You conceded")
       : `${watching ? `${name(me.id)} ${me.life} life · ${name(foe.id)} ${foe.life} life` : `${me.life} life left`}${kind === "relay" && !watching ? ` · ${session.status}` : ""}${kind === "gauntlet" ? ` · ${context.detail}` : ""}`;
     const watchReplay = { text: "Watch replay", icon: "replay", onClick: async () => { const rec = session.record(); const code = await encodeRecord(rec); history.replaceState(null, "", `${location.pathname}${location.search}#${REPLAY_PARAM}=${code}`); await startReplay(rec, code); } };
     const menu = { text: "Menu", icon: "back", link: true, onClick: () => void app.flows.leaveMatch() };

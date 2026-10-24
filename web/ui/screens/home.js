@@ -18,7 +18,7 @@ export function homeScreen(app) {
     : [
       item("gauntlet", "Gauntlet", () => { const r = app.profile().gauntlet; return r.current && !r.current.over ? `Run in progress · stage ${Math.min(r.current.wins + 1, 8)} of 8` : `Eight foes, one life · best ${r.bestStage}/8`; }, () => void go("gauntlet")),
       item("puzzle", "Daily puzzle", () => (app.puzzleSolvedToday() ? "Solved today · come back tomorrow" : `Win in one turn · streak ${sum().puzzleStreak}`), () => void go("puzzle")),
-      item("user", "Profile", () => { const s = sum(); return s.played ? `${s.wins}W ${s.losses}L · ${s.played} matches` : "Your matches and replays"; }, () => void go("profile")),
+      item("user", "Profile", () => { const s = sum(); return s.played ? `${s.wins}W ${s.losses}L · ${s.played} ${s.played === 1 ? "match" : "matches"}` : "Your matches and replays"; }, () => void go("profile")),
       ...(app.funnel ? [item("hammer", "Build your own", () => "Make a TCG from any NFT collection", () => void go("forge"))] : []),
     ];
   const play = h("button", { class: "btn primary lg pulse play-btn", type: "button", on: { click: () => void app.flows.choose("practice") } }, icon("play"), app.relay ? "Join the match" : "Play");

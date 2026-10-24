@@ -91,8 +91,8 @@
 
 /* ------------------------------------------------------------------ the hand */
 /* The hand sits whole along the bottom edge, fanned; a card lifts and grows when you point at it. */
-.hand { --w: clamp(96px, 18vh, 146px); display: flex; justify-content: center; align-items: flex-start; height: calc(var(--w) * 1.4 + 16px); max-width: 100%; padding: 0 16px; margin-bottom: calc(var(--safe-b) * -1); perspective: 1000px; }
-.hand .tcard { --w: inherit; margin-left: calc(var(--w) * -0.22); transform-origin: 50% 120%; transform: rotate(calc(var(--i, 0) * 2.4deg)) translateY(calc(var(--i, 0) * var(--i, 0) * 1.6px)); animation: dealIn 0.45s var(--ease-out) both; }
+.hand { --w: clamp(96px, 18vh, 146px); display: flex; justify-content: center; align-items: flex-start; height: calc(var(--w) * 1.4 + 34px); max-width: 100%; padding: 0 16px; margin-bottom: calc(var(--safe-b) * -1); perspective: 1000px; }
+.hand .tcard { --w: inherit; margin-left: calc(var(--w) * -0.16); transform-origin: 50% 120%; transform: rotate(calc(var(--i, 0) * 2.4deg)) translateY(calc(var(--i, 0) * var(--i, 0) * 1.6px)); animation: dealIn 0.45s var(--ease-out) both; }
 .hand .tcard:first-child { margin-left: 0; }
 @keyframes dealIn { from { opacity: 0; transform: translateY(60px) rotate(0); } }
 .hand .tcard.can { box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--ok), 0 0 18px rgba(99, 227, 145, 0.55); }
@@ -237,6 +237,7 @@
   .pl-hero, .pl-face { width: 46px; height: 46px; }
   .pl-life { min-width: 26px; height: 26px; font-size: 13px; right: -6px; bottom: -4px; }
   .pl-name { font-size: 12px; }
+  .pl-who { display: none; }
   .pl-chips { gap: 4px; }
   .chip-mini { height: 18px; padding: 0 5px 0 4px; font-size: 10px; }
   .pl-energy i { width: 8px; height: 11px; }
@@ -249,12 +250,12 @@
   .battlefield, .match.viewing .battlefield { --u-max: 72px; }
   .u-kw { display: none; }
   /* no hover on a phone: the whole hand shows, and scrolls sideways */
-  .hand { --w: 100px; height: auto; align-items: flex-end; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px 4px; margin-bottom: 0; scrollbar-width: none; perspective: none; }
-  .hand .tcard { --w: 100px; margin-left: -12px; transform: none; }
+  .hand { --w: 112px; height: auto; align-items: flex-end; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding: 16px 8px 4px; margin-bottom: 0; scrollbar-width: none; perspective: none; }
+  .hand .tcard { --w: 112px; margin-left: -12px; transform: none; }
   /* on a phone the hand shows names only; hold a card to read it */
   .hand .tcard .tc-text, .hand .tcard .tc-type { display: none; }
   .hand .tcard .tc-frame { grid-template-rows: 1fr auto; }
-  .hand .tcard .tc-name { margin: 0; border-radius: 0; font-size: 0.95em; white-space: normal; line-height: 1.1; }
+  .hand .tcard .tc-name { margin: 0; border-radius: 0; font-size: 1.2em; white-space: normal; line-height: 1.1; }
   .hand .tcard:hover, .hand .tcard:focus-visible { transform: translateY(-8px); }
   .hand .tcard.picked { transform: translateY(-16px); }
   .killfeed { display: none; }
@@ -263,6 +264,7 @@
   .res-stats { grid-template-columns: repeat(2, 1fr); }
   .res-mvp { grid-template-columns: 72px 1fr; }
   .res-actions .btn { --h: 44px; }
+  .res-primary { width: 100%; }
   .res-primary .btn { min-width: 0; width: 100%; }
   .res-secondary { grid-template-columns: 1fr; gap: 8px; }
 }
