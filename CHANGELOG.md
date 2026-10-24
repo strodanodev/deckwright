@@ -2,6 +2,27 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.6 (2026-10-25): card frames, illustrated pages and arena light
+
+No rules change: every ruleset replays exactly as before.
+
+- **Card frames are art-directed:**
+  - a chamfered name ribbon edged in the rarity's colour;
+  - a bevelled art window;
+  - the type line between hairlines;
+  - framed rules text a size larger, with keywords in gold and trigger labels in the element's colour.
+- **Pages:**
+  - the Gauntlet shows a ladder of eight foe portraits, seeded by the run: won stages gilded, the next lit, a lost one red;
+  - the daily puzzle has an illustrated banner;
+  - the profile opens on a hero section with your top champion and record.
+- **The 3D arena sits in its light:**
+  - static shadows, rendered once per realm load and cast by chosen materials only (off on phones);
+  - about 640 GPU-animated motes in one draw: dust in Valhalla, embers in the Underworld;
+  - about 1.1 ms a frame on a GPU (was 0.5), 25 draws, no main-thread blocking.
+- **Fixes:**
+  - your own replays read "Your turn", "Your champion" and "You win" (0.9.5 printed "You's turn" and "You wins");
+  - the Gauntlet's first stage no longer promises "a stronger deck than the last".
+
 ## 0.9.5 (2026-10-25): polish from a second review
 
 No rules change: every ruleset replays exactly as before.
