@@ -15,6 +15,8 @@
 .tc-art { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 45%, #1a1420), #0a080d 75%); display: grid; place-items: center; color: var(--el); }
 .tc-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
 .tc-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, rgba(11, 9, 16, 0.9)); }
+.tc-art .sigil, .u-art .sigil { position: absolute; inset: 0; width: 100%; height: 100%; color: color-mix(in srgb, var(--el) 85%, white); }
+.sg-emblem { filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor); }
 .tc-art .glyph { width: 58%; height: 58%; opacity: 0.95; filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 30px currentColor); }
 /* no painting (spells, relics, tokens): an element-coloured glow, not a bare icon on black */
 .tc-art:not(:has(img)), .u-art:not(:has(img)) { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--el) 75%, white 10%) 0%, color-mix(in srgb, var(--el) 40%, #1a1420) 35%, #0a080d 78%); }
