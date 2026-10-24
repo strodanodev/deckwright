@@ -2,6 +2,17 @@
 
 Every rules or card change ships under a new `rulesetId`, so a game built on an older Deckwright keeps replaying exactly as it did.
 
+## 0.9.4 (2026-10-25): art for cards without a painting
+
+No rules change: every ruleset replays exactly as before.
+
+- **Spells, relics and tokens without art get an illustration** instead of a stock icon. `ui/sigil.js` draws a seeded SVG scene per card:
+  - god rays and a rune circle in the element's colour;
+  - the element's motif and the card type's emblem;
+  - drifting embers.
+- The layout is seeded by the card, so every card looks different and always the same.
+- No art files are involved, and only numbers and fixed markup go into the SVG.
+
 ## 0.9.3 (2026-10-25): a weathered arena
 
 No rules change: every ruleset replays exactly as before.

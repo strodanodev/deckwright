@@ -10,7 +10,7 @@
       "name": "tessaract",
       "source": "./plugin",
       "description": "Build, balance, ship and host an NFT trading card game with Tessaract.",
-      "version": "0.9.3",
+      "version": "0.9.4",
       "category": "development",
       "tags": [
         "tcg",
